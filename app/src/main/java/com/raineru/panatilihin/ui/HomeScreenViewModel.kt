@@ -3,15 +3,15 @@ package com.raineru.panatilihin.ui
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.raineru.panatilihin.data.NotesRepository
-import com.raineru.panatilihin.data.SelectableNote
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -21,26 +21,25 @@ class HomeScreenViewModel @Inject constructor(
 
     val showDropdownMenu: MutableState<Boolean> = mutableStateOf(false)
 
-    private val notes = repository.getAllNotes()
+    val notes = repository.getAllNotes().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
-    val selectableNotes: SnapshotStateList<SelectableNote> = mutableStateListOf()
+    private val _selectedNotes = mutableStateListOf<Long>()
+    val selectedNotes: List<Long> = _selectedNotes
 
     private fun toggleNodeSelection(noteId: Long) {
-        val note = selectableNotes.find { it.note.id == noteId }
-        val index = selectableNotes.indexOf(note)
-
-        note?.let {
-            selectableNotes.set(index, note.copy(isSelected = !note.isSelected))
+        if (_selectedNotes.contains(noteId)) {
+            _selectedNotes.remove(noteId)
+        } else {
+            _selectedNotes.add(noteId)
         }
     }
 
     fun cancelSelectionMode() {
-        val selectedNoteIndices = selectableNotes.filter { it.isSelected }
-            .map { selectableNotes.indexOf(it) }
-
-        selectedNoteIndices.forEach {
-            selectableNotes[it] = selectableNotes[it].copy(isSelected = false)
-        }
+        _selectedNotes.clear()
     }
 
     fun noteClicked(noteId: Long) {
@@ -55,29 +54,20 @@ class HomeScreenViewModel @Inject constructor(
 
     fun deleteSelectedNotes() {
         viewModelScope.launch {
-            selectableNotes
-                .filter { it.isSelected }
-                .map { it.note }
-                .forEach { repository.deleteNote(it) }
+            _selectedNotes.forEach {
+                withContext(Dispatchers.IO) {
+                    repository.deleteNote(it)
+                }
+            }
+            _selectedNotes.clear()
         }
     }
 
     fun isInSelectionMode(): Boolean {
-        return selectableNotes.count { it.isSelected } > 0
+        return _selectedNotes.isNotEmpty()
     }
 
     fun selectedNotesCount(): Int {
-        return selectableNotes.count { it.isSelected }
-    }
-
-    fun loadSelectableNotes() {
-        viewModelScope.launch {
-            notes.distinctUntilChanged().collectLatest {
-                selectableNotes.clear()
-                selectableNotes.addAll(it.map { note ->
-                    SelectableNote(note, false)
-                })
-            }
-        }
+        return _selectedNotes.size
     }
 }
