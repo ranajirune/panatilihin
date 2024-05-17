@@ -25,17 +25,6 @@ class HomeScreenViewModel @Inject constructor(
 
     val selectableNotes: SnapshotStateList<SelectableNote> = mutableStateListOf()
 
-    init {
-        viewModelScope.launch {
-            notes.distinctUntilChanged().collectLatest {
-                selectableNotes.clear()
-                selectableNotes.addAll(it.map { note ->
-                    SelectableNote(note, false)
-                })
-            }
-        }
-    }
-
     private fun toggleNodeSelection(noteId: Long) {
         val note = selectableNotes.find { it.note.id == noteId }
         val index = selectableNotes.indexOf(note)
@@ -79,5 +68,16 @@ class HomeScreenViewModel @Inject constructor(
 
     fun selectedNotesCount(): Int {
         return selectableNotes.count { it.isSelected }
+    }
+
+    fun loadSelectableNotes() {
+        viewModelScope.launch {
+            notes.distinctUntilChanged().collectLatest {
+                selectableNotes.clear()
+                selectableNotes.addAll(it.map { note ->
+                    SelectableNote(note, false)
+                })
+            }
+        }
     }
 }
