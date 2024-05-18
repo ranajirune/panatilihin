@@ -7,11 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.raineru.panatilihin.data.NotesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -55,9 +53,7 @@ class HomeScreenViewModel @Inject constructor(
     fun deleteSelectedNotes() {
         viewModelScope.launch {
             _selectedNotes.forEach {
-                withContext(Dispatchers.IO) {
-                    repository.deleteNote(it)
-                }
+                repository.deleteNote(it)
             }
             _selectedNotes.clear()
         }
