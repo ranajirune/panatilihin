@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -117,7 +118,9 @@ class FakeNoteRepository : NotesRepository {
     }
 
     override fun getNote(id: Long): Flow<Note?> {
-        TODO("Not yet implemented")
+        return flow {
+            emit(notes.find { it.id == id })
+        }
     }
 
     override suspend fun insertNote(item: Note): Long {
@@ -128,11 +131,12 @@ class FakeNoteRepository : NotesRepository {
     }
 
     override suspend fun deleteNote(item: Note) {
-        TODO("Not yet implemented")
+        notes.remove(item)
     }
 
     override suspend fun deleteNote(id: Long) {
-        TODO("Not yet implemented")
+        val i = notes.indexOfFirst { it.id == id }
+        notes.removeAt(i)
     }
 
     override suspend fun updateNote(item: Note) {
