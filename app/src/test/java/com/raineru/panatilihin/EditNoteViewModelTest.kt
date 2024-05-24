@@ -27,6 +27,40 @@ class EditNoteViewModelTest {
         assertEquals(false, viewModel.contentLoaded.value)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun settingValidNoteIdAgain_DoesNothing() = runTest {
+        val repository = FakeNoteRepository()
+        val viewModel = EditNoteViewModel(repository)
+
+        repository.insertNote(Note("title 1", "content 1"))
+        repository.insertNote(Note("title 2", "content 2"))
+        repository.insertNote(Note("title 3", "content 3"))
+
+        viewModel.setNoteId(1)
+
+        assertEquals("title 1", viewModel.title.value)
+        assertEquals("content 1", viewModel.content.value)
+        assertEquals(true, viewModel.contentLoaded.value)
+
+        viewModel.setNoteId(2)
+
+        viewModel.updateTitle("updated title 2")
+        viewModel.updateContent("updated content 2")
+
+        advanceUntilIdle()
+
+        assertEquals("updated title 2", viewModel.title.value)
+        assertEquals("updated content 2", viewModel.content.value)
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.getNote(2).filterNotNull().collect { note ->
+                assertEquals("title 2", note.title)
+                assertEquals("content 2", note.content)
+            }
+        }
+    }
+
     @Test
     fun setValidNoteId_returnsNoteFromRepositoryAndSetContentLoadedToTrue() = runTest {
         val repository = FakeNoteRepository()
