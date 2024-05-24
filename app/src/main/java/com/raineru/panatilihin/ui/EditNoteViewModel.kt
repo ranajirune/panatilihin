@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -49,7 +50,9 @@ class EditNoteViewModel @Inject constructor(
     }
 
     fun setNoteId(noteId: Long) {
-        this.noteId.value = noteId
+        if (!contentLoaded.value) {
+            this.noteId.value = noteId
+        }
     }
 
     init {
@@ -65,7 +68,10 @@ class EditNoteViewModel @Inject constructor(
                             println("fetchedNote: $fetchedNote")
                             _title.value = fetchedNote.title
                             _content.value = fetchedNote.content
-                            _contentLoaded.value = true
+                            _contentLoaded.update {
+                                println("_contentLoaded: true")
+                                true
+                            }
                         }
                 }
         }
