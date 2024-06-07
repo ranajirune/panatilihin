@@ -6,6 +6,8 @@ import javax.inject.Inject
 class OfflineNotesRepository @Inject constructor(private val noteDao: NoteDao) : NotesRepository {
     override fun getAllNotes(): Flow<List<Note>> = noteDao.getAllNotes()
 
+    override fun getAllNotes(query: String): Flow<List<Note>> = noteDao.getAllNotes(query)
+
     override fun getNote(id: Long): Flow<Note?> = noteDao.getNote(id)
 
     override suspend fun insertNote(item: Note): Long = noteDao.insert(item)
