@@ -26,6 +26,14 @@ interface NoteDao {
     @Query("SELECT * from notes ORDER BY id DESC")
     fun getAllNotes(): Flow<List<Note>>
 
+    @Query("""
+SELECT * from notes
+WHERE title LIKE '%' || :query || '%'
+OR content LIKE '%' || :query || '%'
+ORDER BY id DESC
+""")
+    fun getAllNotes(query: String): Flow<List<Note>>
+
     @Query("DELETE FROM notes WHERE id IN (:ids)")
     suspend fun delete(ids: List<Long>)
 
