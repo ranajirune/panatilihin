@@ -1,10 +1,18 @@
 <resources>
     <string name="app_name">Panatilihin</string>
     <string name="note_sample_content">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque massa eros, iaculis vel felis ac, aliquet semper nisl. Phasellus pellentesque et lectus in luctus. Pellentesque non nisl ut est cursus mattis. Aliquam erat volutpat. Ut molestie, dolor vitae tempus fringilla, massa lacus tempor est, quis fermentum metus diam et ante. Etiam a pharetra erat. Phasellus vel eros volutpat tellus dictum mattis eu sit amet nibh. Curabitur vitae lectus nec lorem vestibulum lacinia. Suspendisse tincidunt quam nibh, ut semper leo posuere et. Nullam sapien est, placerat venenatis tincidunt non, tristique quis lacus. Donec in odio suscipit, aliquet mauris ut, tempus dui. In ac ultricies lacus. Interdum et malesuada fames ac ante ipsum primis in faucibus.</string>
-    <string name="back_button">Back</string>
+    <string name="back">Back</string>
     <string name="close">Close</string>
     <string name="more_options">More options</string>
     <string name="delete">Delete</string>
     <string name="create_note">Create note</string>
+    <string name="search_your_notes">Search your notes</string>
+    <string name="clear">Clear</string>
+    <string name="open_navigation_drawer">Open navigation drawer</string>
+    <string name="delete_label_confirmation_text">We\'ll delete this label and remove it from all of your Keep notes. Your notes won\'t be deleted.</string>
+    <string name="delete_label_title">Delete label?</string>
+    <string name="delete_label_dismiss_button_text">Cancel</string>
+    <string name="delete_label_confirm_button_text">Delete</string>
+    <string name="invalid_label_text">Enter a shorter label name</string>
 
 </resources>
