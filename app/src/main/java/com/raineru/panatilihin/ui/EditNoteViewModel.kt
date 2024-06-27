@@ -1,5 +1,9 @@
 package com.raineru.panatilihin.ui
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.raineru.panatilihin.data.Note
@@ -25,11 +29,15 @@ class EditNoteViewModel @Inject constructor(
     private val repository: NotesRepository
 ) : ViewModel() {
 
-    private val _title = MutableStateFlow("")
-    val title: StateFlow<String> = _title.asStateFlow()
+    var title: String by mutableStateOf("")
+        private set
 
-    private val _content = MutableStateFlow("")
-    val content: StateFlow<String> = _content.asStateFlow()
+    private val titleFlow = snapshotFlow { title }
+
+    var content: String by mutableStateOf("")
+        private set
+
+    private val contentFlow = snapshotFlow { content }
 
     // Prevent updating title and content if content not yet loaded
     private val _contentLoaded = MutableStateFlow(false)
@@ -39,19 +47,25 @@ class EditNoteViewModel @Inject constructor(
 
     fun updateTitle(title: String) {
         if (contentLoaded.value) {
-            this._title.value = title
+            this.title = title
         }
     }
 
     fun updateContent(content: String) {
         if (contentLoaded.value) {
-            this._content.value = content
+            this.content = content
         }
     }
 
     fun setNoteId(noteId: Long) {
         if (!contentLoaded.value) {
             this.noteId.value = noteId
+        }
+    }
+
+    fun insertTestNote(note: Note) {
+        viewModelScope.launch {
+            repository.insertNote(note)
         }
     }
 
@@ -66,8 +80,8 @@ class EditNoteViewModel @Inject constructor(
                         .take(1)
                         .collectLatest { fetchedNote ->
                             println("fetchedNote: $fetchedNote")
-                            _title.value = fetchedNote.title
-                            _content.value = fetchedNote.content
+                            title = fetchedNote.title
+                            content = fetchedNote.content
                             _contentLoaded.update {
                                 println("_contentLoaded: true")
                                 true
@@ -85,10 +99,10 @@ class EditNoteViewModel @Inject constructor(
                 .combine(noteId) { _, noteId ->
                     noteId
                 }
-                .combine(title) { noteId, title ->
+                .combine(titleFlow) { noteId, title ->
                     Note(id = noteId, title = title, content = "")
                 }
-                .combine(content) { note, content ->
+                .combine(contentFlow) { note, content ->
                     note.copy(content = content)
                 }
                 .debounce(500)
