@@ -1,14 +1,15 @@
 package com.raineru.panatilihin.ui
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.raineru.panatilihin.data.Note
 import com.raineru.panatilihin.data.NotesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -22,18 +23,20 @@ class CreateNoteViewModel @Inject constructor(
     private val repository: NotesRepository
 ) : ViewModel() {
 
-    private val _title = MutableStateFlow("")
-    val title: StateFlow<String> = _title.asStateFlow()
+    var title by mutableStateOf("")
+        private set
+    private val titleFlow = snapshotFlow { title }
 
-    private val _content = MutableStateFlow("")
-    val content: StateFlow<String> = _content.asStateFlow()
+    var content by mutableStateOf("")
+        private set
+    private val contentFlow = snapshotFlow { content }
 
     private var noteId: Long = 0
 
     init {
         viewModelScope.launch {
-            _title
-                .combine(_content) { title, content ->
+            titleFlow
+                .combine(contentFlow) { title, content ->
                     Note(id = noteId, title = title, content = content)
                 }
                 .filter {
@@ -55,11 +58,11 @@ class CreateNoteViewModel @Inject constructor(
     }
 
     fun updateTitle(title: String) {
-        _title.value = title
+        this.title = title
     }
 
     fun updateContent(content: String) {
-        _content.value = content
+        this.content = content
     }
 
     private fun isNoteWrittenInDisk(): Boolean {
@@ -67,8 +70,8 @@ class CreateNoteViewModel @Inject constructor(
     }
 
     private fun isInputValid(): Boolean {
-        return (title.value.isBlank() && content.value.isNotBlank()) ||
-                (title.value.isNotBlank() && content.value.isBlank()) ||
-                (title.value.isNotBlank() && content.value.isNotBlank())
+        return (title.isBlank() && content.isNotBlank()) ||
+                (title.isNotBlank() && content.isBlank()) ||
+                (title.isNotBlank() && content.isNotBlank())
     }
 }
