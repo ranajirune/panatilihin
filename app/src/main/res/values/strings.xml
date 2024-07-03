@@ -14,5 +14,6 @@
     <string name="delete_label_dismiss_button_text">Cancel</string>
     <string name="delete_label_confirm_button_text">Delete</string>
     <string name="invalid_label_text">Enter a shorter label name</string>
+    <string name="cancel">Cancel</string>
 
 </resources>
