@@ -158,20 +158,16 @@ fun EditNoteScreen(
         editNoteViewModel.updateNoteId(noteId)
     }
 
-    Column(
+    EditNoteForm(
+        title = editNoteViewModel.title,
+        content = editNoteViewModel.content,
+        onTitleChange = editNoteViewModel::updateTitle,
+        onContentChange = editNoteViewModel::updateContent,
+        contentLoaded = contentLoaded,
+        labels = labels,
+        onLabelClick = onLabelClick,
         modifier = modifier
-            .fillMaxSize()
-    ) {
-        EditNoteForm(
-            title = editNoteViewModel.title,
-            content = editNoteViewModel.content,
-            onTitleChange = editNoteViewModel::updateTitle,
-            onContentChange = editNoteViewModel::updateContent,
-            contentLoaded = contentLoaded,
-            labels = labels,
-            onLabelClick = onLabelClick
-        )
-    }
+    )
 }
 
 @Preview(showBackground = true)
