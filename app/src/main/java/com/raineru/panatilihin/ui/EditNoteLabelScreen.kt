@@ -107,13 +107,8 @@ fun EditNoteLabelScreen(
         mutableStateOf("")
     }
 
-    val allLabel by editNoteLabelViewModel.allLabels.collectAsStateWithLifecycle(
-        lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
-    )
-
-    val noteLabels by editNoteLabelViewModel.noteLabels.collectAsStateWithLifecycle(
-        lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
-    )
+    val allLabel by editNoteLabelViewModel.allLabels.collectAsStateWithLifecycle()
+    val noteLabels by editNoteLabelViewModel.noteLabels.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         editNoteLabelViewModel.updateNoteId(noteId)
