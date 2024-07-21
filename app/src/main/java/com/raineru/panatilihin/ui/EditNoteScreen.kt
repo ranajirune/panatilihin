@@ -174,10 +174,6 @@ fun EditNoteScreen(
         editNoteViewModel.updateNoteId(noteId)
     }
 
-    var showModalBottomSheet by rememberSaveable {
-        mutableStateOf(false)
-    }
-
     NoteScreenContent(
         title = editNoteViewModel.title,
         onTitleChange = editNoteViewModel::updateTitle,
@@ -186,10 +182,6 @@ fun EditNoteScreen(
         onBackClick = onBackClick,
         contentLoaded = contentLoaded,
         labels = labels,
-        onShowModalBottomSheetValueChange = {
-            showModalBottomSheet = it
-        },
-        showModalBottomSheet = showModalBottomSheet,
         onNavigateToEditNoteLabels = onNavigateToEditNoteLabels,
         modifier = modifier
     )
@@ -271,13 +263,15 @@ fun NoteScreenContent(
     contentLoaded: Boolean,
     labels: List<Label>,
     onNavigateToEditNoteLabels: () -> Unit,
-    onShowModalBottomSheetValueChange: (Boolean) -> Unit,
-    showModalBottomSheet: Boolean,
     modifier: Modifier = Modifier
 ) {
+    var showModalBottomSheet by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     ModalBottomSheet(
         showModalBottomSheet = showModalBottomSheet,
-        onShowModalBottomSheetValueChange = onShowModalBottomSheetValueChange,
+        onShowModalBottomSheetValueChange = { showModalBottomSheet = it },
         onLabelListItemClick = onNavigateToEditNoteLabels
     )
 
@@ -290,7 +284,7 @@ fun NoteScreenContent(
             ) {
                 IconButton(
                     onClick = {
-                        onShowModalBottomSheetValueChange(true)
+                        showModalBottomSheet = true
                     }
                 ) {
                     Icon(
@@ -338,10 +332,6 @@ fun NoteScreenContentPreview() {
             mutableStateOf("")
         }
 
-        var showModalBottomSheet by rememberSaveable {
-            mutableStateOf(false)
-        }
-
         NoteScreenContent(
             title = title,
             onTitleChange = { title = it },
@@ -357,8 +347,6 @@ fun NoteScreenContentPreview() {
                 Label("Label 5"),
             ),
             onNavigateToEditNoteLabels = {},
-            onShowModalBottomSheetValueChange = { showModalBottomSheet = it },
-            showModalBottomSheet = showModalBottomSheet
         )
     }
 }
