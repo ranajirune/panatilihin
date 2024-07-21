@@ -1,40 +1,58 @@
 package com.raineru.panatilihin.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.raineru.panatilihin.R
 import com.raineru.panatilihin.data.Label
 import com.raineru.panatilihin.ui.theme.PanatilihinTheme
 import com.raineru.panatilihin.ui.viewmodel.CreateNoteViewModel
 import com.raineru.panatilihin.ui.viewmodel.EditNoteViewModel
 
+// TODO pin note on top app bar
+// TODO redo undo feature
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EditNoteForm(
@@ -49,8 +67,8 @@ fun EditNoteForm(
 ) {
     LazyColumn(
         modifier = modifier
-            .fillMaxSize()
-            .padding(10.dp)
+            .fillMaxSize(),
+        contentPadding = PaddingValues(10.dp)
     ) {
         item {
             BasicTextField(
@@ -119,13 +137,11 @@ fun EditNoteForm(
 @Composable
 fun CreateNoteScreen(
     modifier: Modifier = Modifier,
-    padding: PaddingValues = PaddingValues()
 ) {
     val createNoteViewModel: CreateNoteViewModel = hiltViewModel()
 
     Column(
         modifier = modifier
-            .padding(padding)
             .fillMaxSize()
     ) {
         Box(modifier = Modifier.weight(1f)) {
@@ -142,64 +158,207 @@ fun CreateNoteScreen(
     }
 }
 
+// TODO content should not be covered by the keyboard upon entering details. Content should scroll up
 @Composable
 fun EditNoteScreen(
     noteId: Long,
-    onLabelClick: () -> Unit,
+    onNavigateToEditNoteLabels: () -> Unit,
+    onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val editNoteViewModel: EditNoteViewModel = hiltViewModel()
-
     val labels by editNoteViewModel.noteLabels.collectAsStateWithLifecycle()
-
     val contentLoaded by editNoteViewModel.contentLoaded.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         editNoteViewModel.updateNoteId(noteId)
     }
 
-    EditNoteForm(
+    var showModalBottomSheet by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    NoteScreenContent(
         title = editNoteViewModel.title,
-        content = editNoteViewModel.content,
         onTitleChange = editNoteViewModel::updateTitle,
+        content = editNoteViewModel.content,
         onContentChange = editNoteViewModel::updateContent,
+        onBackClick = onBackClick,
         contentLoaded = contentLoaded,
         labels = labels,
-        onLabelClick = onLabelClick,
+        onShowModalBottomSheetValueChange = {
+            showModalBottomSheet = it
+        },
+        showModalBottomSheet = showModalBottomSheet,
+        onNavigateToEditNoteLabels = onNavigateToEditNoteLabels,
         modifier = modifier
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModalBottomSheet(
+    showModalBottomSheet: Boolean,
+    onShowModalBottomSheetValueChange: (Boolean) -> Unit,
+    onLabelListItemClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (showModalBottomSheet) {
+        ModalBottomSheet(
+            modifier = modifier,
+            dragHandle = null,
+            shape = RectangleShape,
+            onDismissRequest = {
+                onShowModalBottomSheetValueChange(false)
+            },
+        ) {
+            ModalBottomSheetContent(
+                onShowModalBottomSheetValueChange = onShowModalBottomSheetValueChange,
+                onLabelListItemClick = onLabelListItemClick
+            )
+        }
+    }
+}
+
+@Composable
+fun ModalBottomSheetContent(
+    onShowModalBottomSheetValueChange: (Boolean) -> Unit,
+    onLabelListItemClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .clickable {
+                onShowModalBottomSheetValueChange(false)
+                onLabelListItemClick()
+            }
+            .padding(8.dp)
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Email,
+            contentDescription = null
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(stringResource(id = R.string.labels))
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
-fun EditNoteScreenPreview() {
+private fun ModalBottomSheetContentPreview() {
     PanatilihinTheme {
-        var title by remember {
-            mutableStateOf("This is the title dont ask")
-        }
-        var content by remember {
-            mutableStateOf("And I'm the content now...")
+        var showModalBottomSheet by rememberSaveable {
+            mutableStateOf(true)
         }
 
-        val labels = listOf(
-            Label(name = "Label 1", id = 1L),
-            Label(name = "Label 2", id = 2L),
-            Label(name = "Label 3", id = 3L),
-            Label(name = "Label 4", id = 4L),
-            Label(name = "Label 5", id = 5L),
-            Label(name = "Label 6", id = 6L),
-            Label(name = "Label 7", id = 7L),
-            Label(name = "Label 8", id = 8L),
+        ModalBottomSheetContent(
+            onShowModalBottomSheetValueChange = { showModalBottomSheet = it },
+            onLabelListItemClick = {}
         )
+    }
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NoteScreenContent(
+    title: String,
+    onTitleChange: (String) -> Unit,
+    content: String,
+    onContentChange: (String) -> Unit,
+    onBackClick: () -> Unit,
+    contentLoaded: Boolean,
+    labels: List<Label>,
+    onNavigateToEditNoteLabels: () -> Unit,
+    onShowModalBottomSheetValueChange: (Boolean) -> Unit,
+    showModalBottomSheet: Boolean,
+    modifier: Modifier = Modifier
+) {
+    ModalBottomSheet(
+        showModalBottomSheet = showModalBottomSheet,
+        onShowModalBottomSheetValueChange = onShowModalBottomSheetValueChange,
+        onLabelListItemClick = onNavigateToEditNoteLabels
+    )
+
+    Scaffold(
+        modifier = modifier,
+        bottomBar = {
+            Row(
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                IconButton(
+                    onClick = {
+                        onShowModalBottomSheetValueChange(true)
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = null
+                    )
+                }
+            }
+        },
+        topBar = {
+            TopAppBar(
+                title = { },
+                navigationIcon = {
+                    IconButton(onClick = { onBackClick() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
+                }
+            )
+        }
+    ) {
         EditNoteForm(
             title = title,
             content = content,
+            onTitleChange = onTitleChange,
+            onContentChange = onContentChange,
+            contentLoaded = contentLoaded,
             labels = labels,
+            onLabelClick = onNavigateToEditNoteLabels,
+            modifier = Modifier.padding(it)
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun NoteScreenContentPreview() {
+    PanatilihinTheme {
+        var title by rememberSaveable {
+            mutableStateOf("")
+        }
+        var content by rememberSaveable {
+            mutableStateOf("")
+        }
+
+        var showModalBottomSheet by rememberSaveable {
+            mutableStateOf(false)
+        }
+
+        NoteScreenContent(
+            title = title,
             onTitleChange = { title = it },
+            content = content,
             onContentChange = { content = it },
+            onBackClick = { },
             contentLoaded = true,
-            onLabelClick = {}
+            labels = listOf(
+                Label("Label 1"),
+                Label("Label 2"),
+                Label("Label 3"),
+                Label("Label 4"),
+                Label("Label 5"),
+            ),
+            onNavigateToEditNoteLabels = {},
+            onShowModalBottomSheetValueChange = { showModalBottomSheet = it },
+            showModalBottomSheet = showModalBottomSheet
         )
     }
 }
