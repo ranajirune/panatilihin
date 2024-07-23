@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.DrawerState
@@ -31,11 +32,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,6 +73,7 @@ import com.raineru.panatilihin.data.Note
 import com.raineru.panatilihin.data.NoteLabels
 import com.raineru.panatilihin.ui.theme.PanatilihinTheme
 import com.raineru.panatilihin.ui.viewmodel.HomeScreenViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val LABEL_COUNT_TO_SHOW_AFTER_COLLAPSING = 2
@@ -86,28 +93,53 @@ fun HomeScreen(
     onCreateNewLabelClick: () -> Unit,
     onEditLabelClick: () -> Unit,
     drawerState: DrawerState,
+    hasEmptyNote: Boolean,
+    onEmptyNoteNotificationComplete: () -> Unit,
+    onCreateNewNoteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    HomeScreenContent(
-        notes = notes,
-        selectedNotes = selectedNotes,
-        onNoteLongPress = onNoteLongPress,
-        onNoteClick = onNoteClick,
-        modifier = modifier,
-        onMenuClick = onMenuClick,
-        onMenuLabelClick = onMenuLabelClick,
-        labels = labels,
-        onCreateNewLabelClick = onCreateNewLabelClick,
-        onEditLabelClick = onEditLabelClick,
-        drawerState = drawerState
-    )
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        if (hasEmptyNote) {
+            delay(1000)
+            snackbarHostState.showSnackbar(
+                "Empty note discarded"
+            )
+            onEmptyNoteNotificationComplete()
+        }
+    }
+
+    Scaffold(
+        floatingActionButton = {
+            SmallFloatingActionButton(onClick = { onCreateNewNoteClick() }) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = null)
+            }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) {
+        HomeScreenContent(
+            notes = notes,
+            selectedNotes = selectedNotes,
+            onNoteLongPress = onNoteLongPress,
+            onNoteClick = onNoteClick,
+            modifier = modifier.padding(it),
+            onMenuClick = onMenuClick,
+            onMenuLabelClick = onMenuLabelClick,
+            labels = labels,
+            onCreateNewLabelClick = onCreateNewLabelClick,
+            onEditLabelClick = onEditLabelClick,
+            drawerState = drawerState
+        )
+    }
 }
 
 @Composable
 fun HomeScreen(
     onNoteClick: (Long) -> Unit,
+    onCreateNewNoteClick: () -> Unit,
     modifier: Modifier = Modifier,
-    homeScreenViewModel: HomeScreenViewModel = hiltViewModel(),
+    homeScreenViewModel: HomeScreenViewModel = hiltViewModel()
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
@@ -115,36 +147,45 @@ fun HomeScreen(
 
     val noteLabels by homeScreenViewModel.notes.collectAsStateWithLifecycle()
     val labels by homeScreenViewModel.labels.collectAsStateWithLifecycle()
+    val hasEmptyNote by homeScreenViewModel.hasEmptyNote.collectAsStateWithLifecycle()
+    val draftNote by homeScreenViewModel.draftNote.collectAsStateWithLifecycle()
 
-    HomeScreen(
-        modifier = modifier,
-        labels = labels,
-        drawerState = drawerState,
-        selectedNotes = homeScreenViewModel.selectedNotes,
-        notes = noteLabels,
-        onNoteClick = {
-            if (!homeScreenViewModel.isInSelectionMode()) {
-                onNoteClick(it)
-            } else {
-                homeScreenViewModel.noteClicked(it)
-            }
-        },
-        onMenuLabelClick = {
+    Column {
+        Text("hasEmptyNote: $hasEmptyNote")
+        Text("draftNote: $draftNote")
+        HomeScreen(
+            modifier = modifier,
+            labels = labels,
+            drawerState = drawerState,
+            selectedNotes = homeScreenViewModel.selectedNotes,
+            notes = noteLabels,
+            onNoteClick = {
+                if (!homeScreenViewModel.isInSelectionMode()) {
+                    onNoteClick(it)
+                } else {
+                    homeScreenViewModel.noteClicked(it)
+                }
+            },
+            onMenuLabelClick = {
 
-        },
-        onMenuClick = {
-            coroutineScope.launch {
-                drawerState.open()
-            }
-        },
-        onCreateNewLabelClick = {
+            },
+            onMenuClick = {
+                coroutineScope.launch {
+                    drawerState.open()
+                }
+            },
+            onCreateNewLabelClick = {
 
-        },
-        onEditLabelClick = {
+            },
+            onEditLabelClick = {
 
-        },
-        onNoteLongPress = homeScreenViewModel::noteLongPressed,
-    )
+            },
+            hasEmptyNote = hasEmptyNote,
+            onNoteLongPress = homeScreenViewModel::noteLongPressed,
+            onEmptyNoteNotificationComplete = { homeScreenViewModel.deleteDraftNote() },
+            onCreateNewNoteClick = onCreateNewNoteClick
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -209,7 +250,7 @@ private fun HomeScreenContent(
                 yOffset = connection.appBarOffset,
                 modifier = Modifier.align(Alignment.TopCenter)
             ) {
-                Text("I'm the note list")
+//                Text("I'm the note list")
             }
         }
     }
@@ -253,7 +294,7 @@ fun NoteList(
 
 @Composable
 @Preview(showBackground = true)
-fun NoteListPreview(
+private fun NoteListPreview(
     @PreviewParameter(NotePreviewParameterProvider::class)
     notes: List<NoteLabels>
 ) {
@@ -261,6 +302,7 @@ fun NoteListPreview(
     val scope = rememberCoroutineScope()
 
     HomeScreen(
+        onEmptyNoteNotificationComplete = {},
         notes = notes,
         selectedNotes = listOf(3L, 5L, 7L),
         onNoteClick = {
@@ -280,7 +322,9 @@ fun NoteListPreview(
         ),
         onCreateNewLabelClick = {},
         onEditLabelClick = {},
-        drawerState = drawerState
+        drawerState = drawerState,
+        hasEmptyNote = false,
+        onCreateNewNoteClick = {}
     )
 }
 
@@ -546,34 +590,6 @@ fun HomeScreenAppBar(
         content = content
     )
 }
-
-/*@Composable
-fun HomeScreenAppBar(
-    onMenuClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    homeScreenViewModel: HomeScreenViewModel = hiltViewModel()
-) {
-    var query by rememberSaveable {
-        mutableStateOf("")
-    }
-    var expanded by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    HomeScreenAppBar(
-        query = query,
-        onQueryChange = { query = it },
-        onSearch = { query = it },
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-        modifier = modifier,
-        onMenuClick = onMenuClick
-    ) {
-        if (query.isNotEmpty()) {
-
-        }
-    }
-}*/
 
 @Preview(showBackground = true)
 @Composable
