@@ -1,6 +1,5 @@
 package com.raineru.panatilihin.ui.viewmodel
 
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -13,8 +12,6 @@ import com.raineru.panatilihin.data.LabelRepository
 import com.raineru.panatilihin.data.Note
 import com.raineru.panatilihin.data.NoteLabels
 import com.raineru.panatilihin.data.NoteRepository
-import com.raineru.panatilihin.data.defaultNoteAndLabelCrossRef
-import com.raineru.panatilihin.data.defaultNotes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,7 +29,7 @@ class HomeScreenViewModel @Inject constructor(
     private val labelRepository: LabelRepository
 ) : ViewModel() {
 
-    val showDropdownMenu: MutableState<Boolean> = mutableStateOf(false)
+//    val showDropdownMenu: MutableState<Boolean> = mutableStateOf(false)
 
     /*private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()*/
@@ -53,38 +50,21 @@ class HomeScreenViewModel @Inject constructor(
 
     private val hasDraftedNote = MutableStateFlow(false)
 
-    val draftNote: StateFlow<NoteLabels> = draftNoteTitleFlow
-        .combine(draftNoteContentFlow) { title, content ->
-            Note(title = title, content = content)
-        }
-        .combine(_draftNoteLabels) { note, labels ->
-            NoteLabels(
-                note = note,
-                labels = labels.map {
-                    Label(id = it, name = "")
-                }
-            )
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = NoteLabels(
-                note = Note("", ""),
-                labels = emptyList()
-            )
-        )
-
-    val hasEmptyNote: StateFlow<Boolean> = hasDraftedNote
-        .combine(draftNote) { hasDraftedNote, draftNote ->
+    val hasEmptyNote: StateFlow<Boolean> =
+        combine(
+            hasDraftedNote,
+            draftNoteTitleFlow,
+            draftNoteContentFlow
+        ) { hasDraftedNote, draftNoteTitleFlow, draftNoteContentFlow ->
             hasDraftedNote
-                    && draftNote.note.title.isBlank()
-                    && draftNote.note.content.isBlank()
+                    && draftNoteTitleFlow.isBlank()
+                    && draftNoteContentFlow.isBlank()
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false
-        )
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false
+            )
 
     val notes: StateFlow<List<NoteLabels>> = noteRepository.getNoteLabels()
         .stateIn(
@@ -102,11 +82,11 @@ class HomeScreenViewModel @Inject constructor(
 
     var query: String by mutableStateOf("")
         private set
-    private val queryFlow = snapshotFlow { query }
+//    private val queryFlow = snapshotFlow { query }
 
-    fun updateQuery(query: String) {
+    /*fun updateQuery(query: String) {
         this.query = query
-    }
+    }*/
 
     fun deleteDraftNote() {
         draftNoteTitle = ""
@@ -126,7 +106,7 @@ class HomeScreenViewModel @Inject constructor(
         }
     }
 
-    fun cancelSelectionMode() {
+    fun cancelSelection() {
         _selectedNotes.clear()
     }
 
@@ -138,37 +118,8 @@ class HomeScreenViewModel @Inject constructor(
         toggleNodeSelection(noteId)
     }
 
-    fun deleteSelectedNotes() {
-        viewModelScope.launch {
-            _selectedNotes.forEach {
-                noteRepository.deleteNote(it)
-            }
-            _selectedNotes.clear()
-        }
-    }
-
     fun isInSelectionMode(): Boolean {
         return _selectedNotes.isNotEmpty()
-    }
-
-    fun selectedNotesCount(): Int {
-        return _selectedNotes.size
-    }
-
-    private fun insertDefaultNotes() {
-        viewModelScope.launch {
-            noteRepository.insertNotes(
-                defaultNotes
-            )
-        }
-    }
-
-    private fun insertDefaultNoteAndLabelCrossRef() {
-        viewModelScope.launch {
-            noteRepository.insertNoteLabel(
-                defaultNoteAndLabelCrossRef
-            )
-        }
     }
 
     fun updateDraftNoteTitle(title: String) {
@@ -228,6 +179,16 @@ class HomeScreenViewModel @Inject constructor(
                 )
                 deleteDraftNote()
             }
+        }
+    }
+
+    fun deleteSelectedNotes() {
+        viewModelScope.launch {
+            val selectedNotes = _selectedNotes.map {
+                Note(title = "", content = "", id = it)
+            }.toTypedArray()
+            noteRepository.deleteNotes(*selectedNotes)
+            _selectedNotes.clear()
         }
     }
 }
