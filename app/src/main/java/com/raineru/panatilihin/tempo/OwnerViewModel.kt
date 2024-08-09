@@ -7,15 +7,15 @@ import com.raineru.panatilihin.data.tempo.OwnerAndADog
 import com.raineru.panatilihin.data.tempo.OwnerAndDogs
 import com.raineru.panatilihin.data.tempo.OwnerAndTheirDogs
 import com.raineru.panatilihin.data.tempo.OwnerRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class OwnerViewModel @Inject constructor(
+//@HiltViewModel
+class OwnerViewModel
+//@Inject constructor(
+constructor(
     private val repository: OwnerRepository
 ): ViewModel() {
 

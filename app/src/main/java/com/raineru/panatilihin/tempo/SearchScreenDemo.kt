@@ -30,7 +30,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.raineru.panatilihin.data.Note
-import com.raineru.panatilihin.data.NotesRepository
+import com.raineru.panatilihin.data.NoteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -40,7 +40,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    repository: NotesRepository
+    repository: NoteRepository
 ) : ViewModel() {
 
     var query by mutableStateOf("")
