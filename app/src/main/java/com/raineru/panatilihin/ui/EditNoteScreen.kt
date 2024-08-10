@@ -1,19 +1,26 @@
 package com.raineru.panatilihin.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -26,8 +33,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -48,14 +58,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.raineru.panatilihin.R
 import com.raineru.panatilihin.data.Label
 import com.raineru.panatilihin.ui.theme.PanatilihinTheme
-import com.raineru.panatilihin.ui.viewmodel.CreateNoteViewModel
 import com.raineru.panatilihin.ui.viewmodel.EditNoteViewModel
 
 // TODO pin note on top app bar
 // TODO redo undo feature
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun EditNoteForm(
+fun NoteScreenContent(
     title: String,
     content: String,
     labels: List<Label>,
@@ -63,12 +72,18 @@ fun EditNoteForm(
     onContentChange: (String) -> Unit,
     contentLoaded: Boolean,
     onLabelClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     LazyColumn(
         modifier = modifier
+//            .padding(horizontal = 8.dp)
+            .imePadding()
             .fillMaxSize(),
-        contentPadding = PaddingValues(10.dp)
+        contentPadding = PaddingValues(
+            top = contentPadding.calculateTopPadding(),
+            bottom = 40.dp
+        )
     ) {
         item {
             BasicTextField(
@@ -110,12 +125,16 @@ fun EditNoteForm(
                 },
                 modifier = Modifier.fillMaxSize(),
                 textStyle = TextStyle.Default.copy(fontSize = 16.sp),
-                enabled = contentLoaded
+                enabled = contentLoaded,
+                onTextLayout = {
+                }
             )
         }
         item {
             FlowRow(
-                modifier = Modifier.padding(top = 38.dp),
+                modifier = Modifier
+                    .padding(top = 38.dp)
+                    .background(Color.Yellow),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -131,28 +150,11 @@ fun EditNoteForm(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun CreateNoteScreen(
-    modifier: Modifier = Modifier,
-) {
-    val createNoteViewModel: CreateNoteViewModel = hiltViewModel()
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-    ) {
-        Box(modifier = Modifier.weight(1f)) {
-            EditNoteForm(
-                title = createNoteViewModel.title,
-                content = createNoteViewModel.content,
-                onTitleChange = createNoteViewModel::updateTitle,
-                onContentChange = createNoteViewModel::updateContent,
-                contentLoaded = true,
-                labels = emptyList(),
-                onLabelClick = {}
+        item {
+            Spacer(
+                modifier = Modifier.windowInsetsBottomHeight(
+                    WindowInsets.systemBars
+                )
             )
         }
     }
@@ -174,7 +176,7 @@ fun EditNoteScreen(
         editNoteViewModel.updateNoteId(noteId)
     }
 
-    NoteScreenContent(
+    NoteScreen(
         title = editNoteViewModel.title,
         onTitleChange = editNoteViewModel::updateTitle,
         content = editNoteViewModel.content,
@@ -254,7 +256,7 @@ private fun ModalBottomSheetContentPreview() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NoteScreenContent(
+fun NoteScreen(
     title: String,
     onTitleChange: (String) -> Unit,
     content: String,
@@ -275,25 +277,11 @@ fun NoteScreenContent(
         onLabelListItemClick = onNavigateToEditNoteLabels
     )
 
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
     Scaffold(
-        modifier = modifier,
-        bottomBar = {
-            Row(
-                horizontalArrangement = Arrangement.End,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                IconButton(
-                    onClick = {
-                        showModalBottomSheet = true
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = null
-                    )
-                }
-            }
-        },
+        modifier = modifier
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = { },
@@ -304,20 +292,60 @@ fun NoteScreenContent(
                             contentDescription = null
                         )
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior
             )
         }
     ) {
-        EditNoteForm(
-            title = title,
-            content = content,
-            onTitleChange = onTitleChange,
-            onContentChange = onContentChange,
-            contentLoaded = contentLoaded,
-            labels = labels,
-            onLabelClick = onNavigateToEditNoteLabels,
-            modifier = Modifier.padding(it)
-        )
+        Box(Modifier.fillMaxSize()) {
+            NoteScreenContent(
+                title = title,
+                content = content,
+                onTitleChange = onTitleChange,
+                onContentChange = onContentChange,
+                contentLoaded = contentLoaded,
+                labels = labels,
+                onLabelClick = onNavigateToEditNoteLabels,
+                contentPadding = it
+            )
+
+            BottomBar(
+                showModalBottomSheet = { showModalBottomSheet = true },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .imePadding()
+            )
+        }
+    }
+}
+
+@Composable
+private fun BottomBar(
+    showModalBottomSheet: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier.background(Color.Gray)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.End,
+            modifier = Modifier
+                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom))
+                .clickable { }
+                .fillMaxWidth()
+                .height(40.dp)
+        ) {
+            IconButton(
+                onClick = {
+                    showModalBottomSheet()
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = null
+                )
+            }
+        }
     }
 }
 
@@ -332,7 +360,7 @@ fun NoteScreenContentPreview() {
             mutableStateOf("")
         }
 
-        NoteScreenContent(
+        NoteScreen(
             title = title,
             onTitleChange = { title = it },
             content = content,
