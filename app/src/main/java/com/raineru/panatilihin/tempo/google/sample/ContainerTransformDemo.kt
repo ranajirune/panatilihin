@@ -5,12 +5,15 @@ package com.raineru.panatilihin.tempo.google.sample
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.SharedTransitionScope.PlaceHolderSize.Companion.animatedSize
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.ScaleToBounds
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -18,6 +21,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -27,6 +31,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -38,11 +43,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +66,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.raineru.panatilihin.R
+import com.raineru.panatilihin.ui.theme.PanatilihinTheme
 
 @Preview
 @Composable
@@ -100,7 +109,8 @@ fun Details(
 ) {
     with(sharedTransitionScope) {
         Column(
-            Modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp)
+            Modifier
+                .padding(start = 10.dp, end = 10.dp, top = 10.dp)
                 .fillMaxHeight()
                 .wrapContentHeight(Alignment.Top)
                 .fillMaxWidth()
@@ -114,7 +124,8 @@ fun Details(
                         kitty.name,
                         fontSize = 25.sp,
                         modifier =
-                        Modifier.padding(start = 10.dp)
+                        Modifier
+                            .padding(start = 10.dp)
                             .sharedBounds(
                                 rememberSharedContentState(key = kitty.name + kitty.id),
                                 animatedVisibilityScope
@@ -125,7 +136,8 @@ fun Details(
                         fontSize = 22.sp,
                         color = Color.Gray,
                         modifier =
-                        Modifier.padding(start = 10.dp)
+                        Modifier
+                            .padding(start = 10.dp)
                             .sharedBounds(
                                 rememberSharedContentState(key = kitty.breed + kitty.id),
                                 animatedVisibilityScope
@@ -137,13 +149,16 @@ fun Details(
                 Icon(
                     Icons.Outlined.Favorite,
                     contentDescription = null,
-                    Modifier.background(Color(0xffffddee), CircleShape).padding(10.dp)
+                    Modifier
+                        .background(Color(0xffffddee), CircleShape)
+                        .padding(10.dp)
                 )
                 Spacer(Modifier.size(10.dp))
             }
             Box(
                 modifier =
-                Modifier.padding(bottom = 10.dp)
+                Modifier
+                    .padding(bottom = 10.dp)
                     .height(2.dp)
                     .fillMaxWidth()
                     .background(Color(0xffeeeeee))
@@ -202,12 +217,13 @@ fun DetailView(
 ) {
     with(sharedTransitionScope) {
         Column(
-            Modifier.clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                model.selected = null
-            }
+            Modifier
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    model.selected = null
+                }
                 .sharedBounds(
                     rememberSharedContentState(key = "container + ${selected.id}"),
                     animatedVisibilityScope,
@@ -223,7 +239,8 @@ fun DetailView(
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier =
-                    Modifier.padding(10.dp)
+                    Modifier
+                        .padding(10.dp)
                         .sharedElement(
                             rememberSharedContentState(key = selected.id),
                             animatedVisibilityScope,
@@ -239,7 +256,8 @@ fun DetailView(
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier =
-                        Modifier.padding(top = 10.dp, bottom = 10.dp, end = 10.dp)
+                        Modifier
+                            .padding(top = 10.dp, bottom = 10.dp, end = 10.dp)
                             .fillMaxWidth()
                             .fillMaxHeight()
                             .clip(RoundedCornerShape(20.dp))
@@ -264,7 +282,8 @@ fun AnimatedVisibilityScope.GridView(
     with(sharedTransitionScope) {
         Box(Modifier.background(lessVibrantPurple)) {
             Box(
-                Modifier.padding(20.dp)
+                Modifier
+                    .padding(20.dp)
                     .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 2f)
                     .animateEnterExit(fadeIn(), fadeOut())
             ) {
@@ -316,7 +335,8 @@ fun KittyItem(
 ) {
     with(sharedTransitionScope) {
         Column(
-            Modifier.padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
+            Modifier
+                .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
                 .sharedBounds(
                     rememberSharedContentState(key = "container + ${kitty.id}"),
                     animatedVisibilityScope,
@@ -328,11 +348,12 @@ fun KittyItem(
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier =
-                Modifier.sharedElement(
-                    rememberSharedContentState(key = kitty.id),
-                    animatedVisibilityScope,
-                    placeHolderSize = animatedSize
-                )
+                Modifier
+                    .sharedElement(
+                        rememberSharedContentState(key = kitty.id),
+                        animatedVisibilityScope,
+                        placeHolderSize = animatedSize
+                    )
                     .aspectRatio(1f)
                     .clip(RoundedCornerShape(20.dp))
             )
@@ -341,7 +362,8 @@ fun KittyItem(
                 kitty.name,
                 fontSize = 18.sp,
                 modifier =
-                Modifier.padding(start = 10.dp)
+                Modifier
+                    .padding(start = 10.dp)
                     .sharedBounds(
                         rememberSharedContentState(key = kitty.name + kitty.id),
                         animatedVisibilityScope
@@ -353,7 +375,8 @@ fun KittyItem(
                 fontSize = 15.sp,
                 color = Color.Gray,
                 modifier =
-                Modifier.padding(start = 10.dp)
+                Modifier
+                    .padding(start = 10.dp)
                     .sharedBounds(
                         rememberSharedContentState(key = kitty.breed + kitty.id),
                         animatedVisibilityScope
@@ -371,3 +394,319 @@ data class Kitty(val name: String, val photoResId: Int, val breed: String, val i
 }
 
 private val lessVibrantPurple = Color(0xfff3edf7)
+
+val LocalSharedTransitionScopeSelftTest = compositionLocalOf<SharedTransitionScope?> { null }
+val LocalAnimatedVisibilityScopeSelfTest = compositionLocalOf<AnimatedVisibilityScope?> { null }
+
+class ContainerTransformDemoSelfTest {
+
+    @Preview
+    @Composable
+    fun ContainerTransformDemoSelfTestMain() {
+        var showDetails by remember {
+            mutableStateOf(false)
+        }
+
+        SharedTransitionLayout {
+            Column(
+                Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.Start
+            ) {
+                var alignment by remember {
+                    mutableStateOf(Alignment.TopStart)
+                }
+
+                Row {
+                    Button(onClick = { showDetails = !showDetails }) {
+                        Text("showDetails: $showDetails")
+                    }
+                    Button(
+                        onClick = {
+                            alignment = when (alignment) {
+                                Alignment.TopStart -> Alignment.TopCenter
+                                Alignment.TopCenter -> Alignment.TopEnd
+                                Alignment.TopEnd -> Alignment.CenterStart
+                                Alignment.CenterStart -> Alignment.Center
+                                Alignment.Center -> Alignment.CenterEnd
+                                Alignment.CenterEnd -> Alignment.BottomStart
+                                Alignment.BottomStart -> Alignment.BottomCenter
+                                Alignment.BottomCenter -> Alignment.BottomEnd
+                                else -> Alignment.TopStart
+                            }
+                        }
+                    ) {
+                        Text("toggle alignment")
+                    }
+                }
+
+                Box(
+                    Modifier
+                        .fillMaxSize()
+//                        .background(Color.Blue)
+                ) {
+                    AnimatedContent(
+                        targetState = showDetails,
+                        label = "",
+                        transitionSpec = {
+                            fadeIn(
+                                animationSpec = tween(700)
+                            ) togetherWith fadeOut(
+                                animationSpec = tween(700)
+                            )
+                        },
+                        modifier = Modifier.align(alignment)
+                    ) {
+                        CompositionLocalProvider(
+                            LocalSharedTransitionScopeSelftTest provides this@SharedTransitionLayout,
+                            LocalAnimatedVisibilityScopeSelfTest provides this@AnimatedContent
+                        ) {
+                            if (!it) {
+                                List()
+                            } else {
+                                Details()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun List(
+        modifier: Modifier = Modifier
+    ) {
+        val sharedTransitionScope: SharedTransitionScope =
+            LocalSharedTransitionScopeSelftTest.current
+                ?: throw IllegalArgumentException("No scope found")
+        val animatedVisibilityScope: AnimatedVisibilityScope =
+            LocalAnimatedVisibilityScopeSelfTest.current
+                ?: throw IllegalArgumentException("No scope found")
+
+        val roundedCornerAnimation by animatedVisibilityScope.transition
+            .animateDp(label = "rounded corner") { enterExit ->
+                when (enterExit) {
+                    EnterExitState.PreEnter -> 0.dp
+                    EnterExitState.Visible -> 20.dp
+                    EnterExitState.PostExit -> 0.dp
+                }
+            }
+
+//        val roundedCornerAnimation = 20.dp
+
+        with(sharedTransitionScope) {
+            Box(
+                modifier = modifier
+                    .clip(RoundedCornerShape(roundedCornerAnimation))
+                    .sharedBounds(
+                        rememberSharedContentState(key = "container"),
+                        animatedVisibilityScope,
+                        clipInOverlayDuringTransition = OverlayClip(
+                            RoundedCornerShape(
+                                roundedCornerAnimation
+                            )
+                        ),
+                        enter = fadeIn(nonSpatialExpressiveSpring()),
+                        exit = fadeOut(nonSpatialExpressiveSpring()),
+                        resizeMode = ScaleToBounds(
+                            alignment = Alignment.TopCenter
+                        )
+//                        enter = EnterTransition.None,
+//                        exit = ExitTransition.None,
+//                        resizeMode = ScaleToBounds(ContentScale.FillBounds, Alignment.Center)
+                    )
+                    .size(200.dp)
+                    .border(
+                        1.dp,
+                        Color.Black,
+                        RoundedCornerShape(roundedCornerAnimation)
+                    ),
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color.Gray)
+                ) {
+                    /*Text(
+                        "TopCenter", modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .sharedBounds(
+                                rememberSharedContentState(key = "text-topcenter"),
+                                animatedVisibilityScope,
+                                enter = EnterTransition.None,
+                                exit = ExitTransition.None,
+                            )
+                    )
+                    Text(
+                        "CenterEnd", modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .sharedBounds(
+                                rememberSharedContentState(key = "text-centerend"),
+                                animatedVisibilityScope,
+                                enter = EnterTransition.None,
+                                exit = ExitTransition.None,
+                            )
+                    )
+                    Text(
+                        "BottomCenter", modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .sharedBounds(
+                                rememberSharedContentState(key = "text-bottomcenter"),
+                                animatedVisibilityScope,
+                                enter = EnterTransition.None,
+                                exit = ExitTransition.None,
+                            )
+                    )
+                    Text(
+                        "CenterStart", modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .sharedBounds(
+                                rememberSharedContentState(key = "text-centerstart"),
+                                animatedVisibilityScope,
+                                enter = EnterTransition.None,
+                                exit = ExitTransition.None,
+                            )
+                    )*/
+                }
+            }
+        }
+    }
+
+    @Preview(showBackground = true)
+    @Composable
+    fun ListPreview() {
+        PanatilihinTheme {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+//                contentAlignment = Alignment.TopCenter
+            ) {
+                SharedTransitionLayout {
+                    AnimatedContent(
+                        targetState = true,
+                        transitionSpec = {
+                            fadeIn(
+                                animationSpec = tween(700)
+                            ) togetherWith fadeOut(
+                                animationSpec = tween(700)
+                            )
+                        }, label = ""
+                    ) {
+                        CompositionLocalProvider(
+                            LocalSharedTransitionScopeSelftTest provides this@SharedTransitionLayout,
+                            LocalAnimatedVisibilityScopeSelfTest provides this@AnimatedContent
+                        ) {
+                            if (it) {
+                                List()
+                            } else {
+                                Text("Details")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun Details(
+        modifier: Modifier = Modifier
+    ) {
+        val sharedTransitionScope: SharedTransitionScope =
+            LocalSharedTransitionScopeSelftTest.current
+                ?: throw IllegalArgumentException("No scope found")
+        val animatedVisibilityScope: AnimatedVisibilityScope =
+            LocalAnimatedVisibilityScopeSelfTest.current
+                ?: throw IllegalArgumentException("No scope found")
+
+        val roundedCornerAnimation by animatedVisibilityScope.transition
+            .animateDp(
+                label = "rounded corner",
+                transitionSpec = { tween(100, easing = LinearEasing) }
+            ) { enterExit ->
+                when (enterExit) {
+                    EnterExitState.PreEnter -> 20.dp
+                    EnterExitState.Visible -> 0.dp
+                    EnterExitState.PostExit -> 20.dp
+                }
+            }
+
+//        val roundedCornerAnimation = 20.dp
+
+        with(sharedTransitionScope) {
+            Box(
+                modifier = modifier
+                    .sharedBounds(
+                        rememberSharedContentState(key = "container"),
+                        animatedVisibilityScope,
+                        clipInOverlayDuringTransition = OverlayClip(
+                            RoundedCornerShape(
+                                roundedCornerAnimation
+                            )
+                        ),
+                        enter = fadeIn(nonSpatialExpressiveSpring()),
+                        exit = fadeOut(nonSpatialExpressiveSpring()),
+
+//                        enter = EnterTransition.None,
+//                        exit = ExitTransition.None,
+//                        boundsTransform = { initial, target ->
+//                            keyframes {
+//                                durationMillis = 5000
+//                                initial atFraction 0f
+//                                target atFraction 1f using LinearEasing
+//                            }
+//                        }
+                    )
+                    .fillMaxSize()
+                    .background(Color.Gray),
+            ) {
+                /*Text(
+                    "TopCenter", modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .sharedBounds(
+                            rememberSharedContentState(key = "text-topcenter"),
+                            animatedVisibilityScope,
+//                            enter = EnterTransition.None,
+//                            exit = ExitTransition.None,
+                            enter = slideInHorizontally(),
+                            exit = slideOutHorizontally()
+                        )
+                )
+                Text(
+                    "CenterEnd", modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .sharedBounds(
+                            rememberSharedContentState(key = "text-centerend"),
+                            animatedVisibilityScope,
+                            enter = EnterTransition.None,
+                            exit = ExitTransition.None,
+                        )
+                )
+                Text(
+                    "BottomCenter", modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .sharedBounds(
+                            rememberSharedContentState(key = "text-bottomcenter"),
+                            animatedVisibilityScope,
+                            enter = EnterTransition.None,
+                            exit = ExitTransition.None,
+                        )
+                )
+                Text(
+                    "CenterStart", modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .sharedBounds(
+                            rememberSharedContentState(key = "text-centerstart"),
+                            animatedVisibilityScope,
+                            enter = EnterTransition.None,
+                            exit = ExitTransition.None,
+                        )
+                )*/
+            }
+        }
+    }
+
+    fun <T> nonSpatialExpressiveSpring() = spring<T>(
+        dampingRatio = 1f,
+        stiffness = 1600f
+    )
+}
