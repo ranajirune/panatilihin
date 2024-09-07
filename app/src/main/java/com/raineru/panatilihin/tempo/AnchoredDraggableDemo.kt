@@ -11,20 +11,25 @@ import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 enum class DragAnchors {
@@ -102,7 +107,7 @@ class AnchoredDraggableSelfDemo {
 
     @Preview
     @Composable
-    fun AnchoredDraggableSelfDemoMain() {
+    fun AnchoredDraggableSelfDemoUsingConstructor() {
         val density = LocalDensity.current
         val decayAnimationSpec = rememberSplineBasedDecay<Float>()
 
@@ -119,6 +124,8 @@ class AnchoredDraggableSelfDemo {
                 decayAnimationSpec = decayAnimationSpec
             )
         }
+
+        val coroutineScope = rememberCoroutineScope()
 
         Box(Modifier.fillMaxSize()) {
             Box(
@@ -140,8 +147,93 @@ class AnchoredDraggableSelfDemo {
             )
             Text(
                 "offset: ${anchordDraggableState.requireOffset()}",
-                modifier = Modifier.align(Alignment.Center)
+                modifier = Modifier.align(Alignment.CenterStart)
             )
+            Button(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                onClick = {
+                    coroutineScope.launch {
+                        if (anchordDraggableState.currentValue == BoxAnchors.START) {
+                            anchordDraggableState.animateTo(BoxAnchors.END)
+                        } else {
+                            anchordDraggableState.animateTo(BoxAnchors.START)
+                        }
+                    }
+                }
+            ) {
+                Text("Snap to start")
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun AnchoredDraggableSelfDemoUsingUpdateAnchors() {
+        val density = LocalDensity.current
+        val decayAnimationSpec = rememberSplineBasedDecay<Float>()
+
+        val anchoredDraggableState = remember {
+            AnchoredDraggableState(
+                initialValue = BoxAnchors.START,
+                positionalThreshold = { distance: Float -> distance * 0.5f },
+                velocityThreshold = { with(density) { 100.dp.toPx() } },
+                snapAnimationSpec = spring(),
+                decayAnimationSpec = decayAnimationSpec
+            )
+        }
+
+        val coroutineScope = rememberCoroutineScope()
+
+        Box(
+            Modifier
+                .onSizeChanged {
+                    anchoredDraggableState.updateAnchors(
+                        DraggableAnchors {
+                            BoxAnchors.START at 0f
+                            BoxAnchors.END at it.width.toFloat()
+                        }
+                    )
+                }
+                .fillMaxSize()
+        ) {
+            Box(
+                Modifier
+                    .anchoredDraggable(
+                        state = anchoredDraggableState,
+                        orientation = Orientation.Horizontal
+                    )
+                    .offset {
+                        val x = (anchoredDraggableState
+                            .requireOffset() - 50.dp.toPx())
+                            .roundToInt()
+                            .coerceAtLeast(0)
+                        IntOffset(
+                            x = x,
+                            y = 0
+                        )
+                    }
+                    .size(50.dp)
+                    .background(Color.Gray)
+            )
+            Text(
+                "offset: ${anchoredDraggableState.offset}",
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+            )
+            Button(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                onClick = {
+                    coroutineScope.launch {
+                        if (anchoredDraggableState.currentValue == BoxAnchors.START) {
+                            anchoredDraggableState.animateTo(BoxAnchors.END)
+                        } else {
+                            anchoredDraggableState.animateTo(BoxAnchors.START)
+                        }
+                    }
+                }
+            ) {
+                Text("Snap to start")
+            }
         }
     }
 }
