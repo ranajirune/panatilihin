@@ -1,9 +1,20 @@
+@file:OptIn(ExperimentalSharedTransitionApi::class)
+
 package com.raineru.panatilihin.ui
 
+import android.util.Log
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,12 +22,18 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
@@ -24,14 +41,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
@@ -39,6 +61,7 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,11 +85,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.raineru.panatilihin.LocalAnimatedVisibilityScope
+import com.raineru.panatilihin.LocalSharedTransitionScope
 import com.raineru.panatilihin.R
 import com.raineru.panatilihin.data.Label
 import com.raineru.panatilihin.data.Note
@@ -75,10 +102,14 @@ import com.raineru.panatilihin.ui.theme.PanatilihinTheme
 import com.raineru.panatilihin.ui.viewmodel.HomeScreenViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
 
 private const val LABEL_COUNT_TO_SHOW_AFTER_COLLAPSING = 2
 private const val MAX_LABEL_TO_SHOW = 3
 
+// TODO: selection of notes and deletion in the menu
+// TODO search bar should snap back or end depending on drag or fling
+// TODO: editing of labels
 // TODO: Top app bar padding. Scroll top app bar along with list scrolling
 // TODO put pinned and newer notes on top
 @Composable
@@ -96,6 +127,8 @@ fun HomeScreen(
     hasEmptyNote: Boolean,
     onEmptyNoteNotificationComplete: () -> Unit,
     onCreateNewNoteClick: () -> Unit,
+    onCancelNoteSelection: () -> Unit,
+    onSelectedNotesDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -103,6 +136,7 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         if (hasEmptyNote) {
             delay(1000)
+            Log.d("HomeScreen", "hasEmptyNote: $hasEmptyNote")
             snackbarHostState.showSnackbar(
                 "Empty note discarded"
             )
@@ -123,13 +157,15 @@ fun HomeScreen(
             selectedNotes = selectedNotes,
             onNoteLongPress = onNoteLongPress,
             onNoteClick = onNoteClick,
-            modifier = modifier.padding(it),
+            modifier = modifier.consumeWindowInsets(it),
             onMenuClick = onMenuClick,
             onMenuLabelClick = onMenuLabelClick,
             labels = labels,
             onCreateNewLabelClick = onCreateNewLabelClick,
             onEditLabelClick = onEditLabelClick,
-            drawerState = drawerState
+            drawerState = drawerState,
+            onCancelNoteSelection = onCancelNoteSelection,
+            onSelectedNotesDelete = onSelectedNotesDelete
         )
     }
 }
@@ -138,6 +174,8 @@ fun HomeScreen(
 fun HomeScreen(
     onNoteClick: (Long) -> Unit,
     onCreateNewNoteClick: () -> Unit,
+    onCancelNoteSelection: () -> Unit,
+    onSelectedNotesDelete: () -> Unit,
     modifier: Modifier = Modifier,
     homeScreenViewModel: HomeScreenViewModel = hiltViewModel()
 ) {
@@ -148,44 +186,41 @@ fun HomeScreen(
     val noteLabels by homeScreenViewModel.notes.collectAsStateWithLifecycle()
     val labels by homeScreenViewModel.labels.collectAsStateWithLifecycle()
     val hasEmptyNote by homeScreenViewModel.hasEmptyNote.collectAsStateWithLifecycle()
-    val draftNote by homeScreenViewModel.draftNote.collectAsStateWithLifecycle()
 
-    Column {
-        Text("hasEmptyNote: $hasEmptyNote")
-        Text("draftNote: $draftNote")
-        HomeScreen(
-            modifier = modifier,
-            labels = labels,
-            drawerState = drawerState,
-            selectedNotes = homeScreenViewModel.selectedNotes,
-            notes = noteLabels,
-            onNoteClick = {
-                if (!homeScreenViewModel.isInSelectionMode()) {
-                    onNoteClick(it)
-                } else {
-                    homeScreenViewModel.noteClicked(it)
-                }
-            },
-            onMenuLabelClick = {
+    HomeScreen(
+        modifier = modifier,
+        labels = labels,
+        drawerState = drawerState,
+        selectedNotes = homeScreenViewModel.selectedNotes,
+        notes = noteLabels,
+        onNoteClick = {
+            if (!homeScreenViewModel.isInSelectionMode()) {
+                onNoteClick(it)
+            } else {
+                homeScreenViewModel.noteClicked(it)
+            }
+        },
+        onMenuLabelClick = {
 
-            },
-            onMenuClick = {
-                coroutineScope.launch {
-                    drawerState.open()
-                }
-            },
-            onCreateNewLabelClick = {
+        },
+        onMenuClick = {
+            coroutineScope.launch {
+                drawerState.open()
+            }
+        },
+        onCreateNewLabelClick = {
 
-            },
-            onEditLabelClick = {
+        },
+        onEditLabelClick = {
 
-            },
-            hasEmptyNote = hasEmptyNote,
-            onNoteLongPress = homeScreenViewModel::noteLongPressed,
-            onEmptyNoteNotificationComplete = { homeScreenViewModel.deleteDraftNote() },
-            onCreateNewNoteClick = onCreateNewNoteClick
-        )
-    }
+        },
+        hasEmptyNote = hasEmptyNote,
+        onNoteLongPress = homeScreenViewModel::noteLongPressed,
+        onEmptyNoteNotificationComplete = { homeScreenViewModel.deleteDraftNote() },
+        onCreateNewNoteClick = onCreateNewNoteClick,
+        onCancelNoteSelection = onCancelNoteSelection,
+        onSelectedNotesDelete = onSelectedNotesDelete
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -201,12 +236,18 @@ private fun HomeScreenContent(
     onCreateNewLabelClick: () -> Unit,
     onEditLabelClick: () -> Unit,
     onMenuLabelClick: (Long) -> Unit,
+    onCancelNoteSelection: () -> Unit,
+    onSelectedNotesDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var query by rememberSaveable {
         mutableStateOf("")
     }
     var expanded by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var dropDownMenuExpanded by rememberSaveable {
         mutableStateOf(false)
     }
 
@@ -222,8 +263,24 @@ private fun HomeScreenContent(
             (SearchBarDefaults.InputFieldHeight + barTopPadding)
                 .roundToPx()
         }
-        val connection = remember(appBarMaxHeightPx) {
+        val connection = remember {
             CollapsingAppBarNestedScrollConnection(appBarMaxHeightPx)
+        }
+
+        val snapLayout = remember {
+            object : SnapLayoutInfoProvider {
+
+                override fun calculateSnapOffset(velocity: Float): Float {
+                    val anOffset = if (connection.appBarOffset <= -appBarMaxHeightPx) {
+                        0f
+                    } else if (connection.appBarOffset.absoluteValue >= (appBarMaxHeightPx * 0.5f)) {
+                        appBarMaxHeightPx + connection.appBarOffset.toFloat()
+                    } else {
+                        connection.appBarOffset.toFloat()
+                    }
+                    return anOffset
+                }
+            }
         }
 
         Box(
@@ -232,12 +289,14 @@ private fun HomeScreenContent(
                 .nestedScroll(connection)
         ) {
             NoteList(
+                snapLayoutProvider = snapLayout,
                 notes = notes,
                 selectedNotes = selectedNotes,
                 onNoteClick = onNoteClick,
                 onNoteLongPress = onNoteLongPress,
                 topPadding = SearchBarDefaults.InputFieldHeight
                         + dimensionResource(id = R.dimen.note_list_vertical_margin)
+                        + WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
             )
 
             HomeScreenAppBar(
@@ -247,10 +306,38 @@ private fun HomeScreenContent(
                 expanded = expanded,
                 onExpandedChange = { expanded = it },
                 onMenuClick = onMenuClick,
-                yOffset = connection.appBarOffset,
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier
+                    .offset {
+                        IntOffset(x = 0, connection.appBarOffset)
+                    }
+                    .align(Alignment.TopCenter)
             ) {
-//                Text("I'm the note list")
+            }
+
+            if (selectedNotes.isNotEmpty()) {
+                TopAppBar(
+                    title = { Text("${selectedNotes.size}") },
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .zIndex(2f),
+                    navigationIcon = {
+                        IconButton(onClick = onCancelNoteSelection) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    actions = {
+                        HomeScreenDropdownMenu(
+                            expanded = dropDownMenuExpanded,
+                            onExpandedValueChange = { dropDownMenuExpanded = it },
+                            onSelectedNotesDelete = {
+                                onSelectedNotesDelete()
+                            }
+                        )
+                    }
+                )
             }
         }
     }
@@ -264,7 +351,10 @@ fun NoteList(
     onNoteLongPress: (Long) -> Unit,
     topPadding: Dp,
     modifier: Modifier = Modifier,
+    snapLayoutProvider: SnapLayoutInfoProvider
 ) {
+    val snapFlingBehavior = rememberSnapFlingBehavior(snapLayoutProvider)
+
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(2),
         verticalItemSpacing = 8.dp,
@@ -278,7 +368,8 @@ fun NoteList(
             end = dimensionResource(id = R.dimen.note_list_horizontal_margin)
         ),
         modifier = modifier
-            .fillMaxSize()
+            .fillMaxSize(),
+        flingBehavior = snapFlingBehavior
     ) {
         items(notes) {
             NoteEntry(
@@ -286,7 +377,7 @@ fun NoteList(
                 isSelected = it.note.id in selectedNotes,
                 onNoteClick = onNoteClick,
                 onNoteLongPress = onNoteLongPress,
-                labels = it.labels.map { label -> label.name }
+                labels = it.labels.map { label -> label.name },
             )
         }
     }
@@ -324,7 +415,9 @@ private fun NoteListPreview(
         onEditLabelClick = {},
         drawerState = drawerState,
         hasEmptyNote = false,
-        onCreateNewNoteClick = {}
+        onCreateNewNoteClick = {},
+        onCancelNoteSelection = {},
+        onSelectedNotesDelete = {}
     )
 }
 
@@ -338,77 +431,122 @@ fun NoteEntry(
     labels: List<String>,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .border(
-                border = if (isSelected) {
-                    BorderStroke(
-                        3.dp,
-                        SolidColor(Color(0xFF116682))
-                    )
-                } else {
-                    BorderStroke(
-                        1.dp,
-                        SolidColor(Color(0xFFC0C8CD))
-                    )
-                },
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clip(RoundedCornerShape(12.dp))
-            .combinedClickable(
-                onClick = { onNoteClick(note.id) },
-                onLongClick = { onNoteLongPress(note.id) }
-            )
-            .padding(18.dp),
-    ) {
-        if (note.title.isNotEmpty()) {
-            Text(
-                text = note.title,
-                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            )
-        }
-        Spacer(modifier = Modifier.height(18.dp))
-        Text(
-            text = note.content,
-        )
-        if (labels.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(18.dp))
+    val interactionSource = remember {
+        MutableInteractionSource()
+    }
 
-            // TODO remove clickable chips, should open the note upon clicking label. not its own click event
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                if (labels.size <= MAX_LABEL_TO_SHOW) {
-                    labels.forEach {
-                        FilterChip(
-                            selected = true,
-                            onClick = {},
-                            label = {
-                                Text(it)
-                            }
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+        ?: throw IllegalStateException("No SharedElementScope found")
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+        ?: throw IllegalStateException("No SharedElementScope found")
+
+    with(sharedTransitionScope) {
+        Column(
+            modifier = modifier
+                .border(
+                    border = if (isSelected) {
+                        BorderStroke(
+                            3.dp,
+                            SolidColor(Color(0xFF116682))
                         )
+                    } else {
+                        BorderStroke(
+                            1.dp,
+                            SolidColor(Color(0xFFC0C8CD))
+                        )
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .clip(RoundedCornerShape(12.dp))
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    onClick = { onNoteClick(note.id) },
+                    onLongClick = { onNoteLongPress(note.id) }
+                )
+                .padding(18.dp)
+                .sharedBounds(
+                    rememberSharedContentState(key = "note-${note.id}"),
+                    animatedVisibilityScope = animatedVisibilityScope
+                ),
+        ) {
+            if (note.title.isNotEmpty()) {
+                Text(
+                    text = note.title,
+                    style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                )
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = note.content,
+            )
+            if (labels.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // TODO remove clickable chips, should open the note upon clicking label. not its own click event
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (labels.size <= MAX_LABEL_TO_SHOW) {
+                        labels.forEach {
+                            LabelLayout(text = it)
+                        }
+                    } else {
+                        labels.take(LABEL_COUNT_TO_SHOW_AFTER_COLLAPSING)
+                            .forEach { label ->
+                                LabelLayout(text = label)
+                            }
+                        LabelLayout(text = "+${labels.size - LABEL_COUNT_TO_SHOW_AFTER_COLLAPSING}")
                     }
-                } else {
-                    labels.take(LABEL_COUNT_TO_SHOW_AFTER_COLLAPSING)
-                        .forEach { label ->
-                            FilterChip(
-                                selected = true,
-                                onClick = {},
-                                label = {
-                                    Text(label)
-                                }
-                            )
-                        }
-                    FilterChip(
-                        selected = true,
-                        onClick = {},
-                        label = {
-                            Text("+${labels.size - LABEL_COUNT_TO_SHOW_AFTER_COLLAPSING}")
-                        }
-                    )
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun AnimatedNoteEntry(
+    note: Note,
+    isSelected: Boolean,
+    onNoteClick: (Long) -> Unit,
+    onNoteLongPress: (Long) -> Unit,
+    labels: List<String>,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
+    modifier: Modifier = Modifier,
+) {
+    with(sharedTransitionScope) {
+        NoteEntry(
+            modifier = modifier
+                .sharedElement(
+                    rememberSharedContentState(key = "note-${note.id}"),
+                    animatedVisibilityScope = animatedContentScope
+                ),
+            note = note,
+            isSelected = isSelected,
+            onNoteClick = onNoteClick,
+            onNoteLongPress = onNoteLongPress,
+            labels = labels
+        )
+    }
+}
+
+@Composable
+private fun LabelLayout(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .clip(FilterChipDefaults.shape)
+            .background(MaterialTheme.colorScheme.secondary)
+            .padding(horizontal = 8.dp)
+            .defaultMinSize(minHeight = FilterChipDefaults.Height),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = text, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -430,7 +568,7 @@ fun NoteEntryWithoutTitlePreview() {
             modifier = Modifier.align(Alignment.Center),
             onNoteClick = {},
             onNoteLongPress = {},
-            labels = emptyList()
+            labels = emptyList(),
         )
     }
 }
@@ -453,7 +591,7 @@ fun NoteEntryWithTitlePreview() {
             modifier = Modifier.align(Alignment.Center),
             onNoteClick = {},
             onNoteLongPress = {},
-            labels = emptyList()
+            labels = emptyList(),
         )
     }
 }
@@ -480,7 +618,7 @@ fun NoteWith6LabelsPreview() {
                 "Label 4",
                 "Label 5",
                 "Label 6"
-            )
+            ),
         )
     }
 }
@@ -504,7 +642,7 @@ fun NoteWith3LabelsPreview() {
                 "Label 1",
                 "Label 2",
                 "Label 3"
-            )
+            ),
         )
     }
 }
@@ -543,13 +681,12 @@ fun HomeScreenAppBar(
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     onMenuClick: () -> Unit,
-    yOffset: Int,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     // TODO fill width as much as possible but with padding. After search bar expands to full screen, padding shouldn't be visible on the sides
     SearchBar(
-        modifier = modifier.offset { IntOffset(0, yOffset) },
+        modifier = modifier,
         inputField = {
             SearchBarDefaults.InputField(
                 query = query,
@@ -604,10 +741,45 @@ private fun HomeScreenAppBarPreview() {
                 onExpandedChange = {},
                 modifier = Modifier.align(Alignment.TopCenter),
                 onMenuClick = {},
-                yOffset = 0
             ) {
 
             }
+        }
+    }
+}
+
+@Composable
+fun HomeScreenDropdownMenu(
+    expanded: Boolean,
+    onExpandedValueChange: (Boolean) -> Unit,
+    onSelectedNotesDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+    ) {
+        IconButton(
+            onClick = { onExpandedValueChange(true) },
+        ) {
+            Icon(
+                Icons.Default.MoreVert,
+                contentDescription = null
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = {
+                onExpandedValueChange(false)
+            },
+            offset = DpOffset(x = 0.dp, y = (-20).dp)
+        ) {
+            DropdownMenuItem(
+                text = { Text("Delete") },
+                onClick = {
+                    onExpandedValueChange(false)
+                    onSelectedNotesDelete()
+                }
+            )
         }
     }
 }
