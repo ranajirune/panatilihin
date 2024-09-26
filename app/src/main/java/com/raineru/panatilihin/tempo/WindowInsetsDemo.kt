@@ -2,8 +2,11 @@
 
 package com.raineru.panatilihin.tempo
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -13,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,6 +42,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.raineru.panatilihin.ui.CollapsingAppBarNestedScrollConnection
 import com.raineru.panatilihin.ui.theme.PanatilihinTheme
+import kotlin.math.absoluteValue
 
 @Composable
 fun WindowInsetsDemo() {
@@ -47,15 +50,66 @@ fun WindowInsetsDemo() {
 
     val systemBarsTopPadding = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
 
-    val connection = remember {
+    val connection by remember(systemBarsTopPadding) {
+        var offsetLowerBound: Int
+
         val maxHeight = with(density) {
-            systemBarsTopPadding.roundToPx() +
-                    SearchBarDefaults.InputFieldHeight.roundToPx() +
+            offsetLowerBound = systemBarsTopPadding.roundToPx()
+
+            Log.d("WindowInsetsDemo", "offsetLowerBound: $offsetLowerBound")
+            Log.d("WindowInsetsDemo", "systemBarsTopPadding: $systemBarsTopPadding")
+
+            SearchBarDefaults.InputFieldHeight.roundToPx() +
                     8.dp.roundToPx()
         }
 //        Log.d("WindowInsetsDemo", "systemBarPx: $systemBarPx")
-        CollapsingAppBarNestedScrollConnection(maxHeight)
+        mutableStateOf(
+            CollapsingAppBarNestedScrollConnection(
+                appBarMaxHeight = maxHeight,
+                offsetHigherBound = offsetLowerBound,
+            )
+        )
     }
+
+    val snapLayout by remember(connection) {
+        mutableStateOf(
+            object : SnapLayoutInfoProvider {
+
+                override fun calculateApproachOffset(velocity: Float, decayOffset: Float): Float {
+                    Log.d(
+                        "SnapFlingBehaviorDemo",
+                        "calculateApproachOffset: $decayOffset, velocity: $velocity"
+                    )
+                    return decayOffset
+                }
+
+                override fun calculateSnapOffset(velocity: Float): Float {
+                    val offset = if (connection.appBarOffset <= -connection.appBarMaxHeight ||
+                        connection.appBarOffset >= 0
+                    ) {
+                        Log.d("SnapFlingBehaviorDemo: ", "else1")
+                        0f
+                    } else if (connection.appBarOffset.absoluteValue >= (connection.appBarMaxHeight * 0.5f)) {
+                        Log.d("SnapFlingBehaviorDemo: ", "else2")
+                        connection.appBarMaxHeight + connection.appBarOffset.toFloat()
+                    } else {
+                        Log.d(
+                            "SnapFlingBehaviorDemo: ",
+                            "else3: ${connection.appBarOffset.toFloat()}"
+                        )
+                        connection.appBarOffset.toFloat()
+                    }
+                    Log.d(
+                        "SnapFlingBehaviorDemo: ",
+                        "offset: $offset, appBarMaxHeight: ${connection.appBarMaxHeight}"
+                    )
+                    return offset
+                }
+            }
+        )
+    }
+
+    val snapFlingBehavior = rememberSnapFlingBehavior(snapLayout)
 
     Box(
         Modifier.nestedScroll(connection)
@@ -69,8 +123,9 @@ fun WindowInsetsDemo() {
                 .imePadding(),
             contentPadding = PaddingValues(
                 top = 8.dp + SearchBarDefaults.InputFieldHeight +
-                        WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
-            )
+                        systemBarsTopPadding
+            ),
+            flingBehavior = snapFlingBehavior
         ) {
             /*item {
                 Spacer(
@@ -109,7 +164,7 @@ fun WindowInsetsDemo() {
         }
 
         Text(
-            "size: $size",
+            "appBarOffset: ${connection.appBarOffset}",
             modifier = Modifier
                 .align(
                     Alignment.Center
@@ -125,7 +180,11 @@ fun WindowInsetsDemo() {
         }
 
         SearchBar(
-            windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
+            windowInsets = if (expanded) {
+                SearchBarDefaults.windowInsets
+            } else {
+                WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)
+            },
             inputField = {
                 SearchBarDefaults.InputField(
                     query = query,
@@ -143,7 +202,7 @@ fun WindowInsetsDemo() {
                 .offset {
                     IntOffset(x = 0, y = connection.appBarOffset)
                 }
-                .padding(WindowInsets.systemBars.asPaddingValues())
+//                .padding(WindowInsets.systemBars.asPaddingValues())
                 .align(Alignment.TopCenter)
         ) {
 
