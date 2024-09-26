@@ -7,15 +7,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.unit.Velocity
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
 class CollapsingAppBarNestedScrollConnection(
-    val appBarMaxHeight: Int
+    val appBarMaxHeight: Int,
+    val offsetHigherBound: Int = 0,
 ) : NestedScrollConnection {
 
-    var appBarOffset: Int by mutableIntStateOf(0)
+    var appBarOffset: Int by mutableIntStateOf(offsetHigherBound)
         private set
 
     private val settledOffsetThreshold = 10
@@ -23,8 +23,11 @@ class CollapsingAppBarNestedScrollConnection(
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
         val delta = available.y.roundToInt()
         val newOffset = appBarOffset + delta
-        appBarOffset = newOffset.coerceIn(-appBarMaxHeight, 0)
-        Log.d("CollapsingAppBarNestedScrollConnection", "available: $available, source: $source, appBarOffset: $appBarOffset")
+        appBarOffset = newOffset.coerceIn(-appBarMaxHeight, offsetHigherBound)
+        Log.d(
+            "CollapsingAppBarNestedScrollConnection",
+            "available: $available, source: $source, appBarOffset: $appBarOffset"
+        )
         return Offset.Zero
     }
 
@@ -39,7 +42,7 @@ class CollapsingAppBarNestedScrollConnection(
         )
 
         if (source == NestedScrollSource.SideEffect) {
-            // not lowerbound e.g (-222 instead of -224)
+            // not lower bound e.g (-222 instead of -224)
             if ((appBarMaxHeight + appBarOffset) <= settledOffsetThreshold) {
                 appBarOffset = -appBarMaxHeight
             }
@@ -50,11 +53,5 @@ class CollapsingAppBarNestedScrollConnection(
         }
 
         return super.onPostScroll(consumed, available, source)
-    }
-
-    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-
-
-        return super.onPostFling(consumed, available)
     }
 }
