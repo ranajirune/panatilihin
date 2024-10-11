@@ -92,8 +92,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.raineru.panatilihin.LocalAnimatedVisibilityScope
-import com.raineru.panatilihin.LocalSharedTransitionScope
 import com.raineru.panatilihin.R
 import com.raineru.panatilihin.data.Label
 import com.raineru.panatilihin.data.Note
@@ -102,7 +100,6 @@ import com.raineru.panatilihin.ui.theme.PanatilihinTheme
 import com.raineru.panatilihin.ui.viewmodel.HomeScreenViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
 
 private const val LABEL_COUNT_TO_SHOW_AFTER_COLLAPSING = 2
 private const val MAX_LABEL_TO_SHOW = 3
@@ -268,19 +265,7 @@ private fun HomeScreenContent(
         }
 
         val snapLayout = remember {
-            object : SnapLayoutInfoProvider {
-
-                override fun calculateSnapOffset(velocity: Float): Float {
-                    val anOffset = if (connection.appBarOffset <= -appBarMaxHeightPx) {
-                        0f
-                    } else if (connection.appBarOffset.absoluteValue >= (appBarMaxHeightPx * 0.5f)) {
-                        appBarMaxHeightPx + connection.appBarOffset.toFloat()
-                    } else {
-                        connection.appBarOffset.toFloat()
-                    }
-                    return anOffset
-                }
-            }
+            GoogleKeepSnapLayoutInfoProvider(connection)
         }
 
         Box(
@@ -435,73 +420,73 @@ fun NoteEntry(
         MutableInteractionSource()
     }
 
-    val sharedTransitionScope = LocalSharedTransitionScope.current
+    /*val sharedTransitionScope = LocalSharedTransitionScope.current
         ?: throw IllegalStateException("No SharedElementScope found")
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
-        ?: throw IllegalStateException("No SharedElementScope found")
+        ?: throw IllegalStateException("No SharedElementScope found")*/
 
-    with(sharedTransitionScope) {
-        Column(
-            modifier = modifier
-                .border(
-                    border = if (isSelected) {
-                        BorderStroke(
-                            3.dp,
-                            SolidColor(Color(0xFF116682))
-                        )
-                    } else {
-                        BorderStroke(
-                            1.dp,
-                            SolidColor(Color(0xFFC0C8CD))
-                        )
-                    },
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .clip(RoundedCornerShape(12.dp))
-                .combinedClickable(
-                    interactionSource = interactionSource,
-                    indication = LocalIndication.current,
-                    onClick = { onNoteClick(note.id) },
-                    onLongClick = { onNoteLongPress(note.id) }
-                )
-                .padding(18.dp)
-                .sharedBounds(
-                    rememberSharedContentState(key = "note-${note.id}"),
-                    animatedVisibilityScope = animatedVisibilityScope
-                ),
-        ) {
-            if (note.title.isNotEmpty()) {
-                Text(
-                    text = note.title,
-                    style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                )
-            }
-            Spacer(modifier = Modifier.height(18.dp))
-            Text(
-                text = note.content,
+//    with(sharedTransitionScope) {
+    Column(
+        modifier = modifier
+            .border(
+                border = if (isSelected) {
+                    BorderStroke(
+                        3.dp,
+                        SolidColor(Color(0xFF116682))
+                    )
+                } else {
+                    BorderStroke(
+                        1.dp,
+                        SolidColor(Color(0xFFC0C8CD))
+                    )
+                },
+                shape = RoundedCornerShape(12.dp)
             )
-            if (labels.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(18.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = { onNoteClick(note.id) },
+                onLongClick = { onNoteLongPress(note.id) }
+            )
+            .padding(18.dp)
+//                .sharedBounds(
+//                    rememberSharedContentState(key = "note-${note.id}"),
+//                    animatedVisibilityScope = animatedVisibilityScope
+//                ),
+    ) {
+        if (note.title.isNotEmpty()) {
+            Text(
+                text = note.title,
+                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            )
+        }
+        Spacer(modifier = Modifier.height(18.dp))
+        Text(
+            text = note.content,
+        )
+        if (labels.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(18.dp))
 
-                // TODO remove clickable chips, should open the note upon clicking label. not its own click event
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (labels.size <= MAX_LABEL_TO_SHOW) {
-                        labels.forEach {
-                            LabelLayout(text = it)
-                        }
-                    } else {
-                        labels.take(LABEL_COUNT_TO_SHOW_AFTER_COLLAPSING)
-                            .forEach { label ->
-                                LabelLayout(text = label)
-                            }
-                        LabelLayout(text = "+${labels.size - LABEL_COUNT_TO_SHOW_AFTER_COLLAPSING}")
+            // TODO remove clickable chips, should open the note upon clicking label. not its own click event
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (labels.size <= MAX_LABEL_TO_SHOW) {
+                    labels.forEach {
+                        LabelLayout(text = it)
                     }
+                } else {
+                    labels.take(LABEL_COUNT_TO_SHOW_AFTER_COLLAPSING)
+                        .forEach { label ->
+                            LabelLayout(text = label)
+                        }
+                    LabelLayout(text = "+${labels.size - LABEL_COUNT_TO_SHOW_AFTER_COLLAPSING}")
                 }
             }
         }
+//        }
     }
 }
 
