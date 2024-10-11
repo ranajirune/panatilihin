@@ -1,12 +1,20 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.raineru.panatilihin.ui
 
 import android.util.Log
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.delete
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
@@ -20,6 +28,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -315,7 +325,71 @@ fun PanatilihinHomeAppBarPreview() {
 
 @Composable
 fun ExpandedPanatilihinAppBar(
-    modifier: Modifier = Modifier
+    state: TextFieldState,
+    onClearQuery: () -> Unit,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = Color(0xFFEDEEF7)
 ) {
+    Surface(
+        modifier.fillMaxWidth(),
+        color = backgroundColor
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.height(SearchBarDefaults.InputFieldHeight + 8.dp)
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back button"
+                )
+            }
 
+            BasicTextField(
+                state = state,
+                decorator = {
+                    Box(
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (state.text.isEmpty()) {
+                            Text(stringResource(id = R.string.search_your_notes))
+                        }
+                        it()
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f),
+                lineLimits = TextFieldLineLimits.SingleLine
+            )
+
+            IconButton(onClick = onClearQuery) {
+                Icon(
+                    imageVector = Icons.Filled.Clear,
+                    contentDescription = "Clear"
+                )
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ExpandedPanatilihinAppBarPreview() {
+    PanatilihinTheme {
+        Box(Modifier.fillMaxSize()) {
+            val state = rememberTextFieldState()
+
+            ExpandedPanatilihinAppBar(
+                onClearQuery = {
+                    state.edit {
+                        delete(0, state.text.length)
+                        placeCursorBeforeCharAt(0)
+                    }
+                },
+                onBackClick = { /*TODO*/ },
+                state = state
+            )
+        }
+    }
 }
