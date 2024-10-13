@@ -1,6 +1,5 @@
 package com.raineru.panatilihin2.demo
 
-import android.app.Application
 import android.content.Context
 import androidx.activity.ComponentActivity
 import dagger.Binds
@@ -8,7 +7,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.HiltAndroidApp
 import dagger.hilt.android.components.ActivityComponent
 import dagger.hilt.android.qualifiers.ActivityContext
 import dagger.hilt.components.SingletonComponent
@@ -18,8 +16,10 @@ import javax.inject.Qualifier
 // *** Hilt application class
 // https://developer.android.com/training/dependency-injection/hilt-android#application-class
 // All apps that use Hilt must contain an Application class that is annotated with @HiltAndroidApp
+/*
 @HiltAndroidApp
 class ExampleApplication : Application()
+ */
 
 // *** Inject dependencies into Android classes
 // https://developer.android.com/training/dependency-injection/hilt-android#android-classes
