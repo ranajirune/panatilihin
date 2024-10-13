@@ -2,12 +2,10 @@ package com.raineru.panatilihin2.demo
 
 import android.content.Context
 import androidx.activity.ComponentActivity
-import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.components.ActivityComponent
 import dagger.hilt.android.qualifiers.ActivityContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
@@ -36,6 +34,7 @@ class ExampleActivity : ComponentActivity() {
 // First way to define binding: constructor injection
 class AnalyticsAdapter @Inject constructor(
     // You should also indicate how to provide instances of the parameter of the annotated constructor
+    @AnalyticsServiceImpl2
     private val service: AnalyticsService
 )
 
@@ -53,14 +52,15 @@ interface AnalyticsService {
 
 // Constructor-injected, because Hilt needs to know how to
 // provide instances of AnalyticsServiceImpl, too.
+/*
 class AnalyticsServiceImpl @Inject constructor(
 ) : AnalyticsService {
 
-    override fun analyticsMethods() {
-        TODO("Not yet implemented")
-    }
+    override fun analyticsMethods() {}
 }
+*/
 
+/*
 @Module
 @InstallIn(ActivityComponent::class)
 abstract class AnalyticsBindsModule {
@@ -70,11 +70,12 @@ abstract class AnalyticsBindsModule {
         analyticsServiceImpl: AnalyticsServiceImpl
     ): AnalyticsService
 }
+*/
 
 // second way to define bindings in hilt modules: Inject instances with @Provides
 // https://developer.android.com/training/dependency-injection/hilt-android#inject-provides
 
-@Module
+/*@Module
 @InstallIn(ActivityComponent::class)
 object AnalyticsProvidesModule {
 
@@ -85,7 +86,7 @@ object AnalyticsProvidesModule {
         // This function body is called every time an AnalyticsService type is requested
         return AnalyticsServiceImpl()
     }
-}
+}*/
 
 // *** Provide multiple bindings for the same type
 // https://developer.android.com/training/dependency-injection/hilt-android#multiple-bindings
@@ -143,7 +144,7 @@ object NetworkModule {
 // annotating the field or parameter with the corresponding qualifier.
 
 // As a dependency of another class.
-@Module
+/*@Module
 @InstallIn(ActivityComponent::class)
 object AnalyticsModule {
 
@@ -153,7 +154,7 @@ object AnalyticsModule {
     ): AnalyticsService {
         return analyticsServiceImpl1
     }
-}
+}*/
 
 // As a dependency of a constructor-injected class.
 class ExampleServiceImpl @Inject constructor(
@@ -173,6 +174,7 @@ class AnotherExampleActivity: ComponentActivity() {
 // Use predefined qualifiers like @ApplicationContext and @ActivityContext qualifiers
 class AnotherAnalyticsAdapter @Inject constructor(
     @ActivityContext private val context: Context,
+    @AnalyticsServiceImpl1
     private val service: AnalyticsService
 )
 
