@@ -18,6 +18,9 @@ import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import kotlin.random.Random
 
+// ViewModel Cheat sheet
+// https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-cheatsheet
+
 data class DiceUiState(
     val firstDieValue: Int? = null,
     val secondDieValue: Int? = null,
