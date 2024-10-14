@@ -10,4 +10,6 @@ class OfflineNoteRepository @Inject constructor(
     override fun getNote(id: Long): Flow<Note?> = noteDao.getNote(id)
 
     override suspend fun insertNote(note: Note) = noteDao.insertNote(note)
+
+    override fun getAllNotes(): Flow<List<Note>> = noteDao.getAllNotes()
 }
