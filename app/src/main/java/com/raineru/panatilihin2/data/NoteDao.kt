@@ -22,4 +22,7 @@ interface NoteDao {
 
     @Query("SELECT * FROM notes WHERE id = :id")
     fun getNote(id: Long): Flow<Note?>
+
+    @Query("SELECT * FROM notes")
+    fun getAllNotes(): Flow<List<Note>>
 }
