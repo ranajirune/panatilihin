@@ -13,6 +13,11 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -131,5 +136,65 @@ private fun NoteListPreview() {
     )
     PanatilihinTheme {
         NoteList(notes = notes)
+    }
+}
+
+@Composable
+fun HomeScreen(
+    notes: List<Note>,
+    onCreateNote: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        modifier = modifier,
+        floatingActionButton = {
+            FloatingActionButton(onClick = onCreateNote) {
+                Icon(Icons.Filled.Add, "Create note")
+            }
+        },
+    ) {
+        NoteList(
+            notes = notes,
+            modifier = Modifier
+                .padding(it)
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeScreenPreview() {
+    val notes = listOf(
+        Note(
+            title = stringResource(id = R.string.title_initial_text_large),
+            content = stringResource(id = R.string.title_initial_text_large)
+        ),
+        Note(
+            title = "Lorem ipsum dolor sit amet",
+            content = "Lorem ipsum dolor sit amet"
+        ),
+        Note(
+            title = "Lorem ipsum dolor sit amet",
+            content = "Lorem ipsum dolor sit amet"
+        ),
+        Note(
+            title = "Lorem ipsum dolor sit amet",
+            content = "Lorem ipsum dolor sit amet"
+        ),
+        Note(
+            title = "Lorem ipsum dolor sit amet",
+            content = "Lorem ipsum dolor sit amet"
+        ),
+        Note(
+            title = "Lorem ipsum dolor sit amet",
+            content = "Lorem ipsum dolor sit amet"
+        )
+    )
+
+    PanatilihinTheme {
+        HomeScreen(
+            notes = notes,
+            onCreateNote = {}
+        )
     }
 }
