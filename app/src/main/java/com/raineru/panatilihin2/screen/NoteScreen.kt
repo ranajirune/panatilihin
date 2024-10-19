@@ -30,7 +30,7 @@ import com.raineru.panatilihin.R
 import com.raineru.panatilihin.ui.theme.PanatilihinTheme
 
 @Composable
-fun CreateNoteScreen(
+fun NoteScreen(
     titleTextFieldState: TextFieldState,
     contentTextFieldState: TextFieldState,
     onBack: () -> Unit,
@@ -109,9 +109,9 @@ fun CreateNoteScreen(
 
 @Preview(showBackground = true)
 @Composable
-private fun CreateNoteScreenPreview() {
+private fun NoteScreenPreview() {
     PanatilihinTheme {
-        CreateNoteScreen(
+        NoteScreen(
             onBack = {},
             modifier = Modifier,
             titleTextFieldState = rememberTextFieldState(
