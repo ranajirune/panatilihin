@@ -2,10 +2,20 @@ package com.raineru.panatilihin2.demo
 
 import android.content.Context
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
 import dagger.Module
 import dagger.Provides
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ActivityContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
@@ -272,3 +282,30 @@ class ExampleViewModel @Inject constructor(
 
 // *** Hilt and Dagger annotations cheat sheet
 // https://developer.android.com/training/dependency-injection/hilt-cheatsheet
+
+@HiltViewModel(assistedFactory = AssistedViewModel.Factory::class)
+class AssistedViewModel @AssistedInject constructor(
+    @Assisted private val aNumber: Int
+): ViewModel() {
+
+    fun giveMeTheNumber(): Int = aNumber
+
+    @AssistedFactory
+    interface Factory {
+        fun create(aNumber: Int): AssistedViewModel
+    }
+}
+
+@Composable
+fun AssistedViewModelDemo() {
+    val aNumber by remember {
+        mutableIntStateOf((0..100).random())
+    }
+
+    val assistedViewModel: AssistedViewModel =
+        hiltViewModel<AssistedViewModel, AssistedViewModel.Factory>(
+            creationCallback = { factory ->
+                factory.create(aNumber)
+            }
+        )
+}
