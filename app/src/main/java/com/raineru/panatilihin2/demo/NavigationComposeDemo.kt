@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.navigation.compose.NavHost
@@ -24,15 +23,14 @@ import javax.inject.Inject
 
 // Define a home route that doesn't take any arguments
 @Serializable
-object Home
+private object Home
 
 // Define a profile route that takes an ID
 @Serializable
-data class Profile(val id: String)
+private data class Profile(val id: String)
 
-@Preview(showBackground = true)
 @Composable
-private fun NavigationComposeDemo() {
+fun NavigationComposeDemo() {
     val navController = rememberNavController()
 
     NavHost(
@@ -69,10 +67,10 @@ private fun NavigationComposeDemo() {
 }
 
 @Serializable
-object FirstRoom
+private object FirstRoom
 
 @Serializable
-object SecondRoom
+private object SecondRoom
 
 // Call composable on MainActivity for testing
 @Composable
@@ -133,7 +131,7 @@ fun NestedNavigationDemo() {
 }
 
 @HiltViewModel
-class SharedViewModel @Inject constructor() : ViewModel() {
+private class SharedViewModel @Inject constructor() : ViewModel() {
 
     private val _sharedNumber = MutableStateFlow(0)
     val sharedNumber: StateFlow<Int> = _sharedNumber.asStateFlow()
