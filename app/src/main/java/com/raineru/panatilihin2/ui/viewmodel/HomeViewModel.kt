@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -35,7 +34,7 @@ class HomeViewModel @Inject constructor(
         .combine(_searchQuery) { notes, query ->
             Pair(notes, query)
         }
-        .debounce(500)
+//        .debounce(500)
         .map { (users, query) ->
             if (query.isEmpty()) {
                 users
