@@ -2,6 +2,7 @@ package com.raineru.panatilihin2.screen
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -38,10 +39,14 @@ import com.raineru.panatilihin2.data.Note
 @Composable
 fun NoteEntry(
     note: Note,
+    onNoteClick: (Note) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
+            .clickable {
+                onNoteClick(note)
+            }
             .border(
                 border = BorderStroke(
                     1.dp,
@@ -74,7 +79,8 @@ private fun NoteEntryPreview() {
                 title = stringResource(id = R.string.title_initial_text_large),
                 content = stringResource(id = R.string.title_initial_text_large)
             ),
-            modifier = Modifier.padding(8.dp)
+            modifier = Modifier.padding(8.dp),
+            onNoteClick = {}
         )
     }
 }
@@ -82,6 +88,7 @@ private fun NoteEntryPreview() {
 @Composable
 fun NoteList(
     notes: List<Note>,
+    onNoteClick: (Note) -> Unit,
     modifier: Modifier = Modifier,
     topPadding: Dp = 0.dp
 ) {
@@ -100,7 +107,10 @@ fun NoteList(
             .fillMaxSize()
     ) {
         items(notes) {
-            NoteEntry(note = it)
+            NoteEntry(
+                onNoteClick = onNoteClick,
+                note = it
+            )
         }
     }
 }
@@ -135,7 +145,7 @@ private fun NoteListPreview() {
         )
     )
     PanatilihinTheme {
-        NoteList(notes = notes)
+        NoteList(notes = notes, onNoteClick = {})
     }
 }
 
@@ -143,6 +153,7 @@ private fun NoteListPreview() {
 fun HomeScreen(
     notes: List<Note>,
     onCreateNote: () -> Unit,
+    onNoteClick: (Note) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -156,7 +167,8 @@ fun HomeScreen(
         NoteList(
             notes = notes,
             modifier = Modifier
-                .padding(it)
+                .padding(it),
+            onNoteClick = onNoteClick
         )
     }
 }
@@ -194,7 +206,8 @@ private fun HomeScreenPreview() {
     PanatilihinTheme {
         HomeScreen(
             notes = notes,
-            onCreateNote = {}
+            onCreateNote = {},
+            onNoteClick = {}
         )
     }
 }
