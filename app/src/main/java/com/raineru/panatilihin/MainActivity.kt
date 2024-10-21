@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -50,6 +51,10 @@ class MainActivity : ComponentActivity() {
                                         )
                                     }
                                 )
+
+                            // noteFlow needs to be collected to trigger the note update
+                            // in the NoteViewModel
+                            noteViewModel.noteFlow.collectAsStateWithLifecycle()
 
                             NoteScreen(
                                 titleTextFieldState = noteViewModel.noteTitleState,
